@@ -1,6 +1,6 @@
 """Runtime configuration for FormPilot.
 
-Everything that can differ between a local demo, a judge's laptop and a
+Everything that can differ between a local demo, a developer's laptop and a
 production deployment lives here.  Secrets are read from the environment
 first; the JSON config file is only a local-demo convenience.
 """

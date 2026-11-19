@@ -3,13 +3,13 @@ import shutil
 import weasyprint
 
 def compile_docs():
-    hackathon_dir = "/home/nishant/Desktop/Desktop/hackthon"
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     workspace_dir = "/home/nishant/Documents/antigravity/blissful-brahmagupta"
 
-    prot_docs_hackathon = os.path.join(hackathon_dir, "prot_docs")
+    prot_docs_project = os.path.join(project_dir, "prot_docs")
     prot_docs_workspace = os.path.join(workspace_dir, "prot_docs")
 
-    os.makedirs(prot_docs_hackathon, exist_ok=True)
+    os.makedirs(prot_docs_project, exist_ok=True)
     os.makedirs(prot_docs_workspace, exist_ok=True)
 
     images = [
@@ -22,7 +22,7 @@ def compile_docs():
 
     saved_paths = []
     for src, fname in images:
-        dst1 = os.path.join(prot_docs_hackathon, fname)
+        dst1 = os.path.join(prot_docs_project, fname)
         dst2 = os.path.join(prot_docs_workspace, fname)
         shutil.copy2(src, dst1)
         shutil.copy2(src, dst2)
@@ -30,11 +30,11 @@ def compile_docs():
         print(f"Saved: {dst1}")
 
     # Build PDF with WeasyPrint
-    img1 = os.path.abspath(os.path.join(prot_docs_hackathon, "01_autonomous_form_fill_and_otp_checkpoint.png"))
-    img2 = os.path.abspath(os.path.join(prot_docs_hackathon, "02_human_checkpoint_gateway_decision.png"))
-    img3 = os.path.abspath(os.path.join(prot_docs_hackathon, "03_candidate_cockpit_portal_launcher.png"))
-    img4 = os.path.abspath(os.path.join(prot_docs_hackathon, "04_public_recruitment_portal_simulator.png"))
-    img5 = os.path.abspath(os.path.join(prot_docs_hackathon, "05_run_audit_report.png"))
+    img1 = os.path.abspath(os.path.join(prot_docs_project, "01_autonomous_form_fill_and_otp_checkpoint.png"))
+    img2 = os.path.abspath(os.path.join(prot_docs_project, "02_human_checkpoint_gateway_decision.png"))
+    img3 = os.path.abspath(os.path.join(prot_docs_project, "03_candidate_cockpit_portal_launcher.png"))
+    img4 = os.path.abspath(os.path.join(prot_docs_project, "04_public_recruitment_portal_simulator.png"))
+    img5 = os.path.abspath(os.path.join(prot_docs_project, "05_run_audit_report.png"))
 
     html = f"""<!DOCTYPE html>
 <html>
@@ -258,14 +258,14 @@ def compile_docs():
 </html>
 """
 
-    pdf_out_hackathon = os.path.join(hackathon_dir, "prototype.pdf")
+    pdf_out_project = os.path.join(project_dir, "prototype.pdf")
     pdf_out_workspace = os.path.join(workspace_dir, "prototype.pdf")
 
-    print(f"Generating combined PDF via WeasyPrint at {pdf_out_hackathon}...")
-    weasyprint.HTML(string=html).write_pdf(pdf_out_hackathon)
-    shutil.copy2(pdf_out_hackathon, pdf_out_workspace)
+    print(f"Generating combined PDF via WeasyPrint at {pdf_out_project}...")
+    weasyprint.HTML(string=html).write_pdf(pdf_out_project)
+    shutil.copy2(pdf_out_project, pdf_out_workspace)
 
-    print(f"Successfully generated prototype.pdf ({os.path.getsize(pdf_out_hackathon)/1024:.1f} KB)")
+    print(f"Successfully generated prototype.pdf ({os.path.getsize(pdf_out_project)/1024:.1f} KB)")
 
 if __name__ == "__main__":
     compile_docs()

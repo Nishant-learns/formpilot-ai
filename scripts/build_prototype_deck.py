@@ -1,7 +1,6 @@
 """
 Builds prototype.pdf (via WeasyPrint) and prototype.pptx (via python-pptx)
-A universal, professional, evergreen prototype pitch & evidence deck for FormPilot.
-Zero mention of any hackathons, specific colleges, or schemes.
+A universal, production-ready, evergreen prototype pitch & evidence deck for FormPilot.
 """
 
 import os
@@ -687,12 +686,12 @@ def generate_pptx(output_path: str):
 
 
 if __name__ == "__main__":
-    desktop_hackathon = "/home/nishant/Desktop/Desktop/hackthon"
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     workspace_dir = "/home/nishant/Documents/antigravity/blissful-brahmagupta"
 
-    pdf_target_1 = os.path.join(desktop_hackathon, "prototype.pdf")
+    pdf_target_1 = os.path.join(project_dir, "prototype.pdf")
     pdf_target_2 = os.path.join(workspace_dir, "prototype.pdf")
-    pptx_target_1 = os.path.join(desktop_hackathon, "prototype.pptx")
+    pptx_target_1 = os.path.join(project_dir, "prototype.pptx")
     pptx_target_2 = os.path.join(workspace_dir, "prototype.pptx")
 
     generate_pdf(pdf_target_1)

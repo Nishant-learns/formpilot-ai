@@ -164,7 +164,7 @@ Open `http://localhost:5173` to access the FormPilot Cockpit.
 
 ### Live Cloud Deployment
 * **Live Web Application:** [https://formpilot-assistant.vercel.app/](https://formpilot-assistant.vercel.app/)
-* **Instant Guest Access:** Sign-in is 100% optional. Judges and evaluators can jump right into the cockpit with zero friction.
+* **Instant Guest Access:** Sign-in is 100% optional. Anyone can jump right into the cockpit with zero friction.
 * **Google OAuth 2.0 Integration:** Built-in Google Sign-In allows candidates to securely sync their profiles and encrypted vaults across devices.
 
 ---
@@ -179,6 +179,6 @@ pytest tests/ -v
 
 ---
 
-## 10. Summary for Judges
+## 10. Summary
 
 FormPilot re-imagines public administration access by combining generative AI with deterministic safety boundaries. It transforms a stressful, error-prone 2-hour ordeal into a safe, guided 5-minute interaction—empowering millions of students to apply with dignity and confidence.
