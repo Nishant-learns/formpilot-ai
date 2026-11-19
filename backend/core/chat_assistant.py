@@ -2274,10 +2274,12 @@ class FormPilotChatAssistant:
         text_lower = text.lower()
         now = datetime.datetime.now().strftime("%H:%M")
 
-        if re.search(r"\b(jee|jee\s*main|iit\s*jee|nta\s*jee|jee\s*advanced)\b", text_lower):
+        if re.search(r"\b(je+|jee\s*main|iit\s*jee|nta\s*jee|jee\s*advanced|when\s+is\s+je+)\b", text_lower):
             return {
                 "reply": (
-                    "**JEE (Main) 2026/2027 Guidelines & Information**\n\n"
+                    "**JEE (Main) 2026/2027 Schedule & Examination Dates:**\n\n"
+                    "• **Session 1 (January Session):** Scheduled from January 22 to January 31, 2026.\n"
+                    "• **Session 2 (April Session):** Scheduled from April 1 to April 8, 2026.\n"
                     "• **Official Portal:** Apply strictly through `https://jeemain.nta.nic.in/` (NTA).\n"
                     "• **Eligibility:** Passed Class 12 / qualifying examination in 2024, 2025, or appearing in 2026 with Physics, Mathematics, and one of Chemistry/Biology/Technical Vocational subjects.\n"
                     "• **Required Documents:**\n"

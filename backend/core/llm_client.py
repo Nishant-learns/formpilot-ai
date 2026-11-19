@@ -274,6 +274,7 @@ class LLMClient:
                 "model": provider.model,
                 "messages": messages,
                 "temperature": self.config.temperature,
+                "max_tokens": 1000,
             }
             if tools:
                 payload["tools"] = tools
