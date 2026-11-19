@@ -21,6 +21,12 @@ def _env_bool(name: str, default: bool) -> bool:
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT_DIR / ".env")
+except Exception:
+    pass
+
 APP_NAME = "FormPilot"
 APP_VERSION = "1.1.0"
 APP_ENV = os.getenv("FORMPILOT_ENV", "demo").strip().lower()
@@ -88,6 +94,11 @@ LLM_BASE_URL = os.getenv("FORMPILOT_LLM_BASE_URL", "https://api.openai.com/v1").
 LLM_MODEL = os.getenv("FORMPILOT_LLM_MODEL", "gpt-4o-mini").strip()
 LLM_TIMEOUT_SECONDS = int(os.getenv("FORMPILOT_LLM_TIMEOUT_SECONDS", "45"))
 LLM_MAX_HISTORY = int(os.getenv("FORMPILOT_LLM_MAX_HISTORY", "16"))
+
+# Multi-provider fallback pool (auto-failover on rate limit or provider outage)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_BACKUP_KEY = os.getenv("GEMINI_BACKUP_KEY", "").strip()
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
 
 # OTP relay. The default topic is intentionally demo-only; deployments should
 # set FORMPILOT_NTFY_TOPIC to a private, unguessable topic.

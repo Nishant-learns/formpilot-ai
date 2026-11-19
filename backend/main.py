@@ -1852,6 +1852,30 @@ def update_chat_config(config: LLMConfig, ws: Workspace = Depends(get_workspace)
     return ws.chat_assistant.llm.public_config()
 
 
+@app.get("/api/chat/health")
+async def get_chat_health(ws: Workspace = Depends(get_workspace)):
+    """Developer diagnostic: checks real-time health and latency across all LLM providers and TinyFish."""
+    report = await ws.chat_assistant.llm.check_health()
+    report["tinyfish"] = {
+        "mode": getattr(settings, "TINYFISH_MODE", "auto"),
+        "key_configured": bool(getattr(settings, "TINYFISH_API_KEY", "")),
+        "proxy_country": getattr(settings, "TINYFISH_PROXY_COUNTRY", "IN"),
+    }
+    return report
+
+
+@app.post("/api/chat/test")
+async def test_chat_health(ws: Workspace = Depends(get_workspace)):
+    """Trigger developer diagnostic probe for LLM failover pool."""
+    report = await ws.chat_assistant.llm.check_health()
+    report["tinyfish"] = {
+        "mode": getattr(settings, "TINYFISH_MODE", "auto"),
+        "key_configured": bool(getattr(settings, "TINYFISH_API_KEY", "")),
+        "proxy_country": getattr(settings, "TINYFISH_PROXY_COUNTRY", "IN"),
+    }
+    return report
+
+
 # --------------------------------------------------------------------------- websocket
 
 
