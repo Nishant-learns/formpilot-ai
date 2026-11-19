@@ -15,7 +15,10 @@ class BiometricCompressor:
     @staticmethod
     def _strip_exif(image: Image.Image) -> Image.Image:
         """Removes image metadata before saving."""
-        data = list(image.getdata())
+        if hasattr(image, "get_flattened_data"):
+            data = list(image.get_flattened_data())
+        else:
+            data = list(image.getdata())
         image_without_exif = Image.new(image.mode, image.size)
         image_without_exif.putdata(data)
         return image_without_exif

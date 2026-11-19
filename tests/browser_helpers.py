@@ -24,7 +24,10 @@ def run_with_page(
     async_api = pytest.importorskip("playwright.async_api")
 
     async def runner() -> T:
-        playwright = await async_api.async_playwright().start()
+        try:
+            playwright = await async_api.async_playwright().start()
+        except Exception as exc:
+            pytest.skip(f"Playwright driver unavailable: {exc}")
         browser = None
         try:
             try:

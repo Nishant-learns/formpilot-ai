@@ -110,3 +110,8 @@ def client():
     chat_assistant.chat_history.clear()
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"

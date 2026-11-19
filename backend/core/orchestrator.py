@@ -4776,8 +4776,7 @@ class FormPilotOrchestrator:
             item_type = str(item.get("type") or "").lower()
             if item_type in {"submit", "button", "reset", "image", "hidden"}:
                 continue
-            if item.get("disabled") or (item.get("readOnly") and item.get("value")):
-                # Locked or auto-copied by portal (e.g. permanent address auto-copied, pre-filled details)
+            if item.get("disabled"):
                 continue
             if item_type in {"radio", "checkbox"} and item.get("checked"):
                 # The human already selected this in the live browser.  A
@@ -4969,15 +4968,19 @@ class FormPilotOrchestrator:
                     continue
 
                 if sem_key == "account_password":
-                    if _is_verify:
+                    if item.get("readOnly") and item.get("value"):
+                        value = str(item.get("value"))
+                    elif _is_verify:
                         # Confirm / re-enter password field
-                        value = self._session_created_password or vault.find_field_value("account_password")
+                        value = self._session_created_password or (vault.find_field_value("account_password") if vault else None)
                         if not value and not login_page:
                             value = await self._ask_for_password_creation(item, domain)
                     elif not login_page:
                         # Registration / create-password field
                         if self._session_created_password:
                             value = self._session_created_password
+                        elif vault and vault.find_field_value("account_password"):
+                            value = vault.find_field_value("account_password")
                         else:
                             value = await self._ask_for_password_creation(item, domain)
                     else:
@@ -5082,7 +5085,9 @@ class FormPilotOrchestrator:
                         value = vault.get_formatted_dob(expected or "DD/MM/YYYY")
 
                     if not value:
-                        if not item.get("required") and not settings.ASK_OPTIONAL_FIELDS:
+                        if item.get("readOnly") and item.get("value"):
+                            value = str(item.get("value"))
+                        elif not item.get("required") and not settings.ASK_OPTIONAL_FIELDS:
                             skipped.append(
                                 {
                                     "item": item,
@@ -5092,7 +5097,8 @@ class FormPilotOrchestrator:
                                 }
                             )
                             continue
-                        value = await self._ask_for_missing_field(item, sem_key)
+                        else:
+                            value = await self._ask_for_missing_field(item, sem_key)
                         if not value:
                             skipped.append(
                                 {

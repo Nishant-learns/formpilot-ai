@@ -102,8 +102,18 @@ class FormPilotChatAssistant:
         if self.llm.configured:
             try:
                 return await self._handle_with_llm(text, timestamp)
-            except Exception as exc:
-                logger.warning("Assistant LLM call failed, falling back to deterministic expert engine: %s", exc)
+            except LLMError as exc:
+                return self._remember(
+                    {
+                        "reply": (
+                            f"The assistant model is currently unreachable ({exc}). "
+                            "Your application is untouched. You can continue directly in the browser."
+                        ),
+                        "action_taken": "AI_UNAVAILABLE",
+                        "timestamp": timestamp,
+                    },
+                    timestamp,
+                )
 
         return await self._handle_with_rules(text, timestamp)
 
