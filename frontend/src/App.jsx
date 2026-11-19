@@ -12,7 +12,6 @@ import PageBriefPanel from './components/PageBriefPanel';
 import VaultPage from './pages/VaultPage';
 import BiometricsPage from './pages/BiometricsPage';
 import AuditLedgerPage from './pages/AuditLedgerPage';
-import SettingsPage from './pages/SettingsPage';
 import CognitiveStreamPage from './pages/CognitiveStreamPage';
 import DomTelemetryPage from './pages/DomTelemetryPage';
 import HelpPage from './pages/HelpPage';
@@ -1027,8 +1026,6 @@ export default function App() {
               <BiometricsPage notify={notify} />
             ) : sidebarNav === 'runs' ? (
               <AuditLedgerPage notify={notify} onSelectRun={(id) => { setRunId(id); handleSelectNav('portal'); }} />
-            ) : sidebarNav === 'settings' ? (
-              <SettingsPage onConfigSaved={(cfg) => setEngineConfig(cfg)} notify={notify} />
             ) : sidebarNav === 'help' ? (
               <HelpPage
                 onReplayTour={() => setTourOpen(true)}

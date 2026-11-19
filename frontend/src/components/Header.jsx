@@ -210,14 +210,7 @@ export default function Header({
             <BookOpen className="h-4 w-4" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigate('settings')}
-            className="rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] p-2 text-slate-400 hover:text-slate-100 transition-all shadow-sm flex items-center justify-center"
-            title="Connection and engine settings"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
+
 
           {!account && accountsEnabled && onOpenAuth && (
             <button
