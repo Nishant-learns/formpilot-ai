@@ -68,6 +68,7 @@ VAULT_ENCRYPTION_KEY = os.getenv("FORMPILOT_VAULT_KEY", "").strip()
 
 # Google OAuth / Sign-In for Web
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", os.getenv("FORMPILOT_GOOGLE_CLIENT_ID", "")).strip()
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", os.getenv("FORMPILOT_GOOGLE_CLIENT_SECRET", "")).strip()
 
 
 # TinyFish

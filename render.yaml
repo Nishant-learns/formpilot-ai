@@ -10,7 +10,11 @@ services:
       - key: FORMPILOT_DEMO_MODE
         value: "1"
       - key: FORMPILOT_ACCOUNTS_REQUIRED
-        value: "1"
+        value: "0"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
       - key: FORMPILOT_CORS_ORIGINS
         value: "https://formpilot-assistant.vercel.app,http://localhost:5173"
       - key: FORMPILOT_ENABLE_SIMULATOR

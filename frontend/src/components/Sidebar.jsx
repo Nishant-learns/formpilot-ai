@@ -366,10 +366,10 @@ export default function Sidebar({
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-colors text-emerald-200/90 hover:text-emerald-100 hover:bg-emerald-500/10 ${
               collapsed ? 'justify-center' : ''
             }`}
-            title="Sign in or create a FormPilot account"
+            title="Sign in with Google (optional) or create account"
           >
             <User className="w-4 h-4 text-emerald-400/90" />
-            {!collapsed && <span>Sign in / Create account</span>}
+            {!collapsed && <span>Sign in with Google</span>}
           </button>
         )}
 

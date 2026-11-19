@@ -162,6 +162,11 @@ npm run dev
 
 Open `http://localhost:5173` to access the FormPilot Cockpit.
 
+### Live Cloud Deployment
+* **Live Web Application:** [https://formpilot-assistant.vercel.app/](https://formpilot-assistant.vercel.app/)
+* **Instant Guest Access:** Sign-in is 100% optional. Judges and evaluators can jump right into the cockpit with zero friction.
+* **Google OAuth 2.0 Integration:** Built-in Google Sign-In allows candidates to securely sync their profiles and encrypted vaults across devices.
+
 ---
 
 ## 9. Verification & Tests
