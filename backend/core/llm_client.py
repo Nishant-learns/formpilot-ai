@@ -111,6 +111,7 @@ class LLMClient:
 
         env_key = (
             os.getenv("FORMPILOT_LLM_API_KEY")
+            or os.getenv("GEMINI_API_KEY")
             or os.getenv("OPENAI_API_KEY")
             or settings.LLM_API_KEY
             or ""
@@ -154,6 +155,7 @@ class LLMClient:
     def api_key(self) -> str:
         return (
             os.getenv("FORMPILOT_LLM_API_KEY")
+            or os.getenv("GEMINI_API_KEY")
             or os.getenv("OPENAI_API_KEY")
             or self.config.api_key
             or ""
