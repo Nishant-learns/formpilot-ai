@@ -1,0 +1,108 @@
+"""Shared test setup.
+
+Environment variables are set before any backend module is imported so the
+application uses a disposable data directory instead of the developer's real
+vault, uploads, or run journals.
+"""
+
+from __future__ import annotations
+
+import os
+import shutil
+import tempfile
+from pathlib import Path
+
+_TEST_ROOT = Path(tempfile.mkdtemp(prefix="formpilot-tests-"))
+os.environ["FORMPILOT_ENV"] = "demo"
+os.environ["FORMPILOT_DEMO_MODE"] = "true"
+os.environ["FORMPILOT_ENABLE_SIMULATOR"] = "true"
+os.environ["FORMPILOT_DATA_DIR"] = str(_TEST_ROOT / "data")
+os.environ["FORMPILOT_UPLOADS_DIR"] = str(_TEST_ROOT / "uploads")
+os.environ["FORMPILOT_RUNS_DIR"] = str(_TEST_ROOT / "runs")
+os.environ["FORMPILOT_AUTH_TOKEN"] = ""
+os.environ["FORMPILOT_VAULT_KEY"] = ""
+os.environ["FORMPILOT_PBKDF2_ITERATIONS"] = "1000"
+os.environ["FORMPILOT_RATE_LIMIT"] = "0"
+os.environ["FORMPILOT_NTFY_TOPIC"] = "formpilot_test_otp"
+os.environ["FORMPILOT_DEMO_OTP"] = "492015"
+os.environ["TINYFISH_API_KEY"] = ""
+os.environ["TINYFISH_MODE"] = "local"
+# Tests exercise the deterministic fallback unless they inject a fake model.
+os.environ["FORMPILOT_LLM_API_KEY"] = ""
+os.environ["OPENAI_API_KEY"] = ""
+os.environ["FORMPILOT_LLM_BASE_URL"] = "https://api.openai.com/v1"
+os.environ["FORMPILOT_LLM_MODEL"] = "gpt-4o-mini"
+
+for _directory in (
+    _TEST_ROOT / "data",
+    _TEST_ROOT / "uploads",
+    _TEST_ROOT / "runs",
+):
+    _directory.mkdir(parents=True, exist_ok=True)
+
+
+def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - cleanup hook
+    shutil.rmtree(_TEST_ROOT, ignore_errors=True)
+
+from backend.core import playwright_patch  # noqa: F401
+
+import pytest  # noqa: E402  (import after environment setup)
+
+
+@pytest.fixture(autouse=True)
+def clean_facts_store():
+    """Give every test an empty semantic fact and portal-account store."""
+    from backend.core import settings
+    from backend.core.facts import FactBook
+    from backend.core.portal_accounts import PortalAccountStore
+
+    for path in (settings.DATA_DIR / "facts.json", settings.DATA_DIR / "portal_accounts.json"):
+        path.unlink(missing_ok=True)
+    FactBook.reset_instance()
+    PortalAccountStore.reset_instance()
+    yield
+    FactBook.reset_instance()
+    PortalAccountStore.reset_instance()
+    for path in (settings.DATA_DIR / "facts.json", settings.DATA_DIR / "portal_accounts.json"):
+        path.unlink(missing_ok=True)
+
+
+@pytest.fixture(autouse=True)
+def clean_account_store():
+    """Each test starts with no accounts and no cached account workspaces."""
+    import backend.main as main_module
+    from backend.core import settings
+    from backend.core.accounts import AccountStore
+
+    (settings.ACCOUNTS_DIR / "accounts.json").unlink(missing_ok=True)
+    AccountStore.reset_instance()
+    main_module.accounts = AccountStore.get_instance()
+    main_module.workspaces._workspaces.clear()
+    yield
+    (settings.ACCOUNTS_DIR / "accounts.json").unlink(missing_ok=True)
+    AccountStore.reset_instance()
+    main_module.accounts = AccountStore.get_instance()
+    main_module.workspaces._workspaces.clear()
+
+
+@pytest.fixture()
+def vault_manager(tmp_path):
+    """An isolated vault backed by a temporary file."""
+    from backend.core.vault import VaultManager
+
+    manager = VaultManager(str(tmp_path / "candidate_vault.json"))
+    manager.reset_defaults()
+    return manager
+
+
+@pytest.fixture()
+def client():
+    """FastAPI test client with a fresh demo profile for each test."""
+    from fastapi.testclient import TestClient
+
+    from backend.main import app, chat_assistant, vault_mgr
+
+    vault_mgr.reset_defaults()
+    chat_assistant.chat_history.clear()
+    with TestClient(app) as test_client:
+        yield test_client

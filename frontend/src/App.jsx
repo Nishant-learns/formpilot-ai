@@ -1,0 +1,1282 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import CopilotWindow from './components/CopilotWindow';
+import PortalLauncher from './components/PortalLauncher';
+import LiveViewport from './components/LiveViewport';
+import CognitiveStream from './components/CognitiveStream';
+import LiveChat from './components/LiveChat';
+import HumanCheckpointModal from './components/HumanCheckpointModal';
+import FormMapPanel from './components/FormMapPanel';
+import PageBriefPanel from './components/PageBriefPanel';
+import VaultPage from './pages/VaultPage';
+import BiometricsPage from './pages/BiometricsPage';
+import AuditLedgerPage from './pages/AuditLedgerPage';
+import SettingsPage from './pages/SettingsPage';
+import CognitiveStreamPage from './pages/CognitiveStreamPage';
+import DomTelemetryPage from './pages/DomTelemetryPage';
+import HelpPage from './pages/HelpPage';
+import TechDocsPage from './pages/TechDocsPage';
+import AuthPage from './pages/AuthPage';
+import SessionStrip from './components/SessionStrip';
+import MobileTabBar from './components/MobileTabBar';
+import FloatingCopilotIsland from './components/FloatingCopilotIsland';
+import Toasts from './components/Toasts';
+import OnboardingTour, { hasSeenOnboarding } from './components/OnboardingTour';
+import { clearSessionToken, getWsUrl, PRACTICE_PORTAL_URL, SESSION_EXPIRED_EVENT, setSessionToken } from './apiConfig';
+import { AlertTriangle, FileText, MessageSquare, ScanSearch, Terminal, X } from 'lucide-react';
+import { NeuralSparkleIcon } from './components/CustomIcons';
+
+const ACTIVE_STATES = new Set(['RESOLVING', 'RUNNING', 'WAITING_FOR_USER', 'PAUSED']);
+const TERMINAL_STATES = new Set(['STOPPED', 'FAILED', 'COMPLETED', 'AWAITING_PAYMENT', 'DONE']);
+
+function formatElapsed(startedAt) {
+  if (!startedAt) return '00:00';
+  const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  const hours = Math.floor(minutes / 60);
+  if (hours > 0) {
+    return `${String(hours).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+  }
+  return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+}
+
+function startedAtFromRunId(runId) {
+  const match = /^run-(\d{8})-(\d{6})-/.exec(runId || '');
+  if (!match) return null;
+  const [, date, time] = match;
+  const parsed = new Date(
+    Number(date.slice(0, 4)),
+    Number(date.slice(4, 6)) - 1,
+    Number(date.slice(6, 8)),
+    Number(time.slice(0, 2)),
+    Number(time.slice(2, 4)),
+    Number(time.slice(4, 6))
+  );
+  return Number.isNaN(parsed.getTime()) ? null : parsed.getTime();
+}
+
+export default function App() {
+  const [runState, setRunState] = useState('IDLE');
+  const [runMode, setRunMode] = useState('fill');
+  const [events, setEvents] = useState([]);
+  const [screenshot, setScreenshot] = useState('');
+  const [currentGate, setCurrentGate] = useState(null);
+  const [gateHidden, setGateHidden] = useState(false);
+  const [currentSection, setCurrentSection] = useState(1);
+  const [liveSession, setLiveSession] = useState(null);
+  const [formMap, setFormMap] = useState(null);
+  const [pageBrief, setPageBrief] = useState(null);
+  const [takeover, setTakeover] = useState({ available: false, active: false });
+  const [briefRefreshing, setBriefRefreshing] = useState(false);
+  const [recipe, setRecipe] = useState(null);
+  const [fillSummary, setFillSummary] = useState(null);
+  const [fillFailures, setFillFailures] = useState([]);
+  const [entryMode, setEntryMode] = useState(null);
+  const [entryOptions, setEntryOptions] = useState([]);
+  const [loginMethod, setLoginMethod] = useState(null);
+  const [loginIdentifier, setLoginIdentifier] = useState(null);
+  const [rescanning, setRescanning] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [rightTab, setRightTab] = useState('chat'); // 'chat' | 'stream' | 'map'
+  const [chatMessages, setChatMessages] = useState([]);
+  const [vault, setVault] = useState(null);
+  const [vaultError, setVaultError] = useState('');
+  const [query, setQuery] = useState('');
+  const [runId, setRunId] = useState(null);
+  const [lastError, setLastError] = useState('');
+  const [startedAt, setStartedAt] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [now, setNow] = useState(Date.now());
+  const [tourOpen, setTourOpen] = useState(false);
+
+  // FormPilot account state.  `authChecked` stays false until the capability
+  // probe answers, so the cockpit never flashes before the sign-in screen.
+  const [authStatus, setAuthStatus] = useState(null);
+  const [account, setAccount] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  // Guest instances still expose signup/login; this opens the gate on demand.
+  const [authGateOpen, setAuthGateOpen] = useState(false);
+
+  const [guestMode, setGuestMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem('formpilot.guest_mode.v1') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Engine config state
+  const [engineConfig, setEngineConfig] = useState({
+    mode: 'local',
+    proxy_region: 'in',
+    tinyfish_api_key: ''
+  });
+
+  // Layout architecture & windowing state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [copilotMode, setCopilotMode] = useState('docked'); // 'docked' | 'floating'
+  const [copilotMinimized, setCopilotMinimized] = useState(false);
+  const [sidebarNav, setSidebarNav] = useState('portal');
+
+  const wsRef = useRef(null);
+  const gateKeyRef = useRef('');
+  const reconnectRef = useRef(null);
+  const currentGateRef = useRef(null);
+  const toastIdRef = useRef(0);
+  const previousStateRef = useRef('IDLE');
+  const socketEnabledRef = useRef(false);
+
+  const agentRunning = ACTIVE_STATES.has(runState);
+  const inspectOpen = runState === 'INSPECT_READY' && Boolean(liveSession);
+  const paused = runState === 'PAUSED';
+  const sessionVisible = agentRunning || inspectOpen || runState === 'AWAITING_PAYMENT' || TERMINAL_STATES.has(runState);
+  const relaunchable = ['STOPPED', 'FAILED', 'COMPLETED', 'DONE'].includes(runState);
+  const started = agentRunning || inspectOpen || runState === 'AWAITING_PAYMENT';
+  const terminal = TERMINAL_STATES.has(runState);
+
+  // A cockpit without an account is allowed when this instance does not
+  // require accounts, or when the user has opted to continue in guest mode.
+  const accountsRequired = Boolean(
+    authStatus?.accounts_enabled !== false && authStatus?.accounts_required && !guestMode
+  );
+  const needsAuth = authChecked && accountsRequired && !account && !guestMode;
+  const sessionReady = authChecked && !needsAuth;
+
+  const readiness = useMemo(() => {
+    if (!vault) return null;
+    const checks = [
+      vault.full_name,
+      vault.dob,
+      vault.gender,
+      vault.mobile,
+      vault.email,
+      vault.address_line_1 || vault.village_town_city,
+      vault.district,
+      vault.state,
+      vault.pincode,
+      vault.matric?.roll_number,
+      vault.intermediate?.roll_number,
+      vault.photo_path,
+      vault.signature_path,
+    ];
+    const total = checks.length;
+    const filled = checks.filter((value) => value !== null && value !== undefined && String(value).trim() !== '').length;
+    return { filled, total, percent: Math.round((filled / total) * 100) };
+  }, [vault]);
+
+  const elapsed = useMemo(
+    () => formatElapsed(startedAt || startedAtFromRunId(runId)),
+    [startedAt, runId, now]
+  );
+  const busy = agentRunning || inspectOpen;
+
+  const notify = useCallback((message, tone = 'info') => {
+    toastIdRef.current += 1;
+    const id = toastIdRef.current;
+    setToasts((previous) => [...previous.slice(-3), { id, message, tone }]);
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts((previous) => previous.filter((toast) => toast.id !== id));
+  }, []);
+
+  // Clear every piece of per-account state so the next sign-in never sees the
+  // previous candidate's vault, chat, runs or live cockpit.
+  const resetAccountState = useCallback(() => {
+    setEvents([]);
+    setScreenshot('');
+    setCurrentGate(null);
+    setGateHidden(false);
+    setCurrentSection(1);
+    setLiveSession(null);
+    setFormMap(null);
+    setPageBrief(null);
+    setTakeover({ available: false, active: false });
+    setRecipe(null);
+    setFillSummary(null);
+    setFillFailures([]);
+    setEntryMode(null);
+    setEntryOptions([]);
+    setLoginMethod(null);
+    setLoginIdentifier(null);
+    setChatMessages([]);
+    setVault(null);
+    setVaultError('');
+    setQuery('');
+    setRunId(null);
+    setLastError('');
+    setStartedAt(null);
+    setRunState('IDLE');
+    setRunMode('fill');
+    setSidebarNav('portal');
+  }, []);
+
+  // A 401 from any API call means the stored session is gone.  Close the
+  // socket, drop the previous candidate's state, and show the sign-in screen.
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      socketEnabledRef.current = false;
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      resetAccountState();
+      setAccount(null);
+      setAuthGateOpen(true);
+      setAuthStatus((previous) => (
+        previous ? { ...previous, signed_in: false, account: null } : previous
+      ));
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, [resetAccountState]);
+
+  const handleAuthenticated = useCallback((nextAccount, token) => {
+    if (token) setSessionToken(token);
+    try {
+      window.localStorage.setItem('formpilot.guest_mode.v1', 'false');
+    } catch {}
+    setGuestMode(false);
+    setAccount(nextAccount || null);
+    setAuthGateOpen(false);
+    setAuthStatus((previous) => ({
+      ...(previous || {}),
+      signed_in: true,
+      account: nextAccount || null,
+    }));
+  }, []);
+
+  const handleContinueAsGuest = useCallback(() => {
+    try {
+      window.localStorage.setItem('formpilot.guest_mode.v1', 'true');
+    } catch {}
+    setGuestMode(true);
+    setAuthGateOpen(false);
+    setAccount(null);
+    setAuthStatus((previous) => ({
+      ...(previous || {}),
+      signed_in: false,
+      account: null,
+    }));
+  }, []);
+
+  const handleOpenAuth = useCallback(() => setAuthGateOpen(true), []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/account/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+    clearSessionToken();
+    try {
+      window.localStorage.removeItem('formpilot.guest_mode.v1');
+    } catch {}
+    setGuestMode(false);
+    socketEnabledRef.current = false;
+    if (reconnectRef.current) clearTimeout(reconnectRef.current);
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    resetAccountState();
+    setAccount(null);
+    setAuthGateOpen(true);
+    setAuthStatus((previous) => (
+      previous ? { ...previous, signed_in: false, account: null } : previous
+    ));
+  }, [resetAccountState]);
+
+  const fetchVault = useCallback(async () => {
+    setVaultError('');
+    // Render's free instance can be asleep, so a cold start may fail the first
+    // request.  Retry briefly before telling the candidate something is wrong.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const res = await fetch('/api/vault');
+        if (res.ok) {
+          setVault(await res.json());
+          setVaultError('');
+          return;
+        }
+        if (res.status === 401) {
+          setVaultError('Your session expired. Please sign in again.');
+          return;
+        }
+        if (res.status < 500) {
+          setVaultError('FormPilot could not load your vault. Please try again.');
+          return;
+        }
+      } catch (err) {
+        console.error('Vault fetch error:', err);
+      }
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 1200 * (attempt + 1)));
+      }
+    }
+    setVaultError('The server is taking longer than usual. Check your connection and try again.');
+  }, []);
+
+  const fetchPageBrief = useCallback(async (refresh = false) => {
+    try {
+      const res = await fetch(`/api/page/brief${refresh ? '?refresh=true' : ''}`);
+      if (res.ok) {
+        setPageBrief(await res.json());
+        return;
+      }
+      if (res.status === 409) {
+        setPageBrief(null);
+      }
+    } catch (err) {
+      console.error('Page brief fetch error:', err);
+    }
+  }, []);
+
+  // Keep the elapsed timer moving only while the agent is active.
+  useEffect(() => {
+    if (!started) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [started]);
+
+  // Refresh saved identity details on navigation
+  useEffect(() => {
+    if (sessionReady) fetchVault();
+  }, [sidebarNav, fetchVault, sessionReady]);
+
+  // First visit: a short, skippable tour instead of dropping the candidate
+  // into a dense cockpit with no explanation.  Never show it over sign-in.
+  useEffect(() => {
+    if (!sessionReady || hasSeenOnboarding()) return undefined;
+    const timer = setTimeout(() => setTourOpen(true), 700);
+    return () => clearTimeout(timer);
+  }, [sessionReady]);
+
+  // Initialize WebSocket connection, agent state and global key listeners
+  useEffect(() => {
+    currentGateRef.current = currentGate;
+  }, [currentGate]);
+
+  // Probe whether this instance uses FormPilot accounts and whether a stored
+  // session is still valid.  The probe itself is public on purpose.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/account/status');
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const data = await res.json();
+        if (cancelled) return;
+        setAuthStatus(data);
+        setAccount(data.signed_in && data.account ? data.account : null);
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Account status error:', err);
+        // A backend without the account layer should still open the local demo.
+        setAuthStatus({
+          accounts_enabled: false,
+          accounts_required: false,
+          signed_in: false,
+          account: null,
+        });
+      } finally {
+        if (!cancelled) setAuthChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && currentGateRef.current) {
+        setGateHidden(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Initialize WebSocket connection, agent state and account data only after
+  // the account gate resolves.  Signing out tears the socket down so a second
+  // account never inherits the first account's live cockpit.
+  useEffect(() => {
+    if (!sessionReady) return undefined;
+    socketEnabledRef.current = true;
+    connectWebSocket();
+    fetchEngineConfig();
+    fetchAgentState();
+    fetchVault();
+
+    return () => {
+      socketEnabledRef.current = false;
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionReady, account?.id]);
+
+  const fetchEngineConfig = async () => {
+    try {
+      const res = await fetch('/api/engine/config');
+      if (res.ok) {
+        const data = await res.json();
+        setEngineConfig(data);
+      }
+    } catch (err) {
+      console.error('Config fetch error:', err);
+    }
+  };
+
+  const fetchAgentState = async () => {
+    try {
+      const res = await fetch('/api/agent/state');
+      if (!res.ok) return;
+      const data = await res.json();
+      setRunState(data.state || 'IDLE');
+      setRunMode(data.run_mode || 'fill');
+      setLiveSession(data.live_session || null);
+      setTakeover(data.takeover || { available: false, active: false });
+      setFormMap(data.form_map || null);
+      setPageBrief(data.page_brief || null);
+      setRecipe(data.recipe || null);
+      setFillSummary(data.fill_summary || null);
+      setFillFailures(data.fill_failures || []);
+      setEntryMode(data.entry_mode || null);
+      setEntryOptions(data.entry_options || []);
+      setLoginMethod(data.login_method || null);
+      setLoginIdentifier(data.login_identifier || null);
+      setCurrentSection(data.current_section || 1);
+      setQuery(data.query || '');
+      setRunId(data.run_id || null);
+      setLastError(data.last_error || '');
+      if (ACTIVE_STATES.has(data.state) && data.run_id) {
+        setStartedAt(startedAtFromRunId(data.run_id) || Date.now());
+      }
+      if (data.active_gate) {
+        setCurrentGate(data.active_gate);
+        setGateHidden(false);
+        gateKeyRef.current = gateIdentity(data.active_gate);
+      }
+    } catch (err) {
+      console.error('Agent state fetch error:', err);
+    }
+  };
+
+  function gateIdentity(gate) {
+    if (!gate) return '';
+    return [
+      gate.gate_type,
+      gate.field_key || '',
+      gate.section_number || '',
+      gate.title || '',
+    ].join(':');
+  }
+
+  const connectWebSocket = () => {
+    const wsUrl = getWsUrl('/ws/cockpit');
+
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('[Cockpit WS] Connected to FormPilot.');
+    };
+
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+
+        // Add to cognitive events stream
+        if (data.phase && data.message) {
+          setEvents((prev) => [...prev.slice(-399), data]);
+        }
+
+        // Update live screenshot fallback
+        if (data.screenshot) {
+          setScreenshot(data.screenshot);
+        }
+
+        if (data.state) {
+          if (data.state === 'FAILED' && previousStateRef.current !== 'FAILED') {
+            notify('The application hit an error. Review the activity log and try again.', 'error');
+          }
+          if (data.state === 'WAITING_FOR_USER' && previousStateRef.current !== 'WAITING_FOR_USER') {
+            notify('A checkpoint needs your input.', 'info');
+          }
+          previousStateRef.current = data.state;
+          setRunState(data.state);
+          if (ACTIVE_STATES.has(data.state) || data.state === 'INSPECT_READY') {
+            setStartedAt((previous) => previous ?? (startedAtFromRunId(data.run_id) || Date.now()));
+          } else {
+            setStartedAt(null);
+          }
+        }
+        if (data.run_id) {
+          setRunId(data.run_id);
+        }
+        if (data.last_error) {
+          setLastError(data.last_error);
+        }
+        if (data.run_mode) {
+          setRunMode(data.run_mode);
+        }
+        if ('live_session' in data) {
+          setLiveSession(data.live_session || null);
+        }
+        if (data.takeover) {
+          setTakeover(data.takeover);
+        }
+        if (data.form_map) {
+          setFormMap((previous) => (
+            previous?.fingerprint === data.form_map.fingerprint && previous?.url === data.form_map.url
+              ? previous
+              : data.form_map
+          ));
+        }
+        if ('page_brief' in data) {
+          setPageBrief(data.page_brief || null);
+        }
+        if ('recipe' in data) {
+          setRecipe(data.recipe || null);
+        }
+        if ('fill_summary' in data) {
+          setFillSummary(data.fill_summary || null);
+        }
+        if ('fill_failures' in data) {
+          setFillFailures(data.fill_failures || []);
+        }
+        if ('entry_mode' in data) {
+          setEntryMode(data.entry_mode || null);
+        }
+        if ('entry_options' in data) {
+          setEntryOptions(data.entry_options || []);
+        }
+        if ('login_method' in data) {
+          setLoginMethod(data.login_method || null);
+        }
+        if ('login_identifier' in data) {
+          setLoginIdentifier(data.login_identifier || null);
+        }
+
+        // Update active gate. A new checkpoint opens the panel; a hidden panel
+        // stays hidden for the same gate.
+        if ('active_gate' in data) {
+          const nextGate = data.active_gate;
+          setCurrentGate(nextGate);
+          if (!nextGate) {
+            gateKeyRef.current = '';
+            setGateHidden(false);
+          } else {
+            const key = gateIdentity(nextGate);
+            if (key !== gateKeyRef.current) {
+              gateKeyRef.current = key;
+              setGateHidden(false);
+            }
+          }
+        }
+
+        // Update current section
+        if (data.current_section) {
+          setCurrentSection(data.current_section);
+        }
+
+        // Handle a chat reply from FormPilot
+        if (data.type === 'CHAT_MESSAGE') {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              sender: data.sender || 'FormPilot',
+              text: data.message,
+              time: data.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              action_taken: data.action_taken,
+              field_updated: data.field_updated,
+              new_value: data.new_value,
+              entry_mode: data.entry_mode,
+              login_method: data.login_method,
+              login_identifier: data.login_identifier
+            }
+          ]);
+        }
+      } catch (err) {
+        console.error('[Cockpit WS] Parse error:', err);
+      }
+    };
+
+    ws.onclose = () => {
+      if (!socketEnabledRef.current) return;
+      console.log('[Cockpit WS] Disconnected. Reconnecting in 2s...');
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
+      reconnectRef.current = setTimeout(connectWebSocket, 2000);
+    };
+  };
+
+  // Launch Agent
+  const handleLaunch = async (queryOrUrl, mode = 'fill') => {
+    setEvents([]);
+    setCurrentGate(null);
+    setGateHidden(false);
+    gateKeyRef.current = '';
+    setScreenshot('');
+    setLiveSession(null);
+    setFormMap(null);
+    setPageBrief(null);
+    setRecipe(null);
+    setFillSummary(null);
+    setFillFailures([]);
+    setEntryMode(null);
+    setEntryOptions([]);
+    setLoginMethod(null);
+    setLoginIdentifier(null);
+    setChatMessages([]);
+    setRunMode(mode);
+    setRunState('RESOLVING');
+    setQuery(queryOrUrl);
+    setStartedAt(Date.now());
+    setNow(Date.now());
+    setLastError('');
+    try {
+      const res = await fetch('/api/agent/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query_or_url: queryOrUrl, mode })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        notify(data.message || 'Could not start the application sequence.', 'error');
+        setRunState('IDLE');
+        setStartedAt(null);
+      } else {
+        setRunId(data.run_id || null);
+        notify(mode === 'inspect' ? 'Inspect-only session started.' : 'Application started.', 'success');
+      }
+    } catch (err) {
+      console.error('Launch error:', err);
+      notify('Could not reach the FormPilot backend. Check that the app is running.', 'error');
+      setRunState('FAILED');
+      setStartedAt(null);
+    }
+  };
+
+  const handlePractice = () => {
+    handleLaunch(PRACTICE_PORTAL_URL, 'fill');
+  };
+
+  // Emergency Stop Agent
+  const handleStop = async () => {
+    try {
+      await fetch('/api/agent/stop', { method: 'POST' });
+    } catch (err) {
+      console.error('Stop error:', err);
+    }
+    setRunState('STOPPED');
+    setCurrentGate(null);
+    setGateHidden(false);
+    gateKeyRef.current = '';
+    setLiveSession(null);
+    setScreenshot('');
+    setStartedAt(null);
+    notify('Session stopped. The browser was closed.', 'info');
+  };
+
+  const handleNewSession = async () => {
+    try {
+      await fetch('/api/agent/reset', { method: 'POST' });
+    } catch (err) {
+      console.error('Session reset error:', err);
+    }
+    setRunState('IDLE');
+    setRunMode('fill');
+    setCurrentGate(null);
+    setGateHidden(false);
+    setLiveSession(null);
+    setScreenshot('');
+    setFormMap(null);
+    setRecipe(null);
+    setEvents([]);
+    setChatMessages([]);
+    setCurrentSection(1);
+    setQuery('');
+    setRunId(null);
+    setLastError('');
+    setStartedAt(null);
+    previousStateRef.current = 'IDLE';
+    gateKeyRef.current = '';
+  };
+
+  const handleTakeover = async () => {
+    try {
+      const res = await fetch('/api/agent/takeover', { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) {
+        notify(data.message || 'The browser cannot be taken over right now.', 'error');
+        return;
+      }
+      setTakeover(data.takeover || { available: true, active: true });
+      if (data.state) setRunState(data.state);
+      notify('You have the browser. FormPilot is paused until you return control.', 'info');
+    } catch (err) {
+      console.error('Takeover error:', err);
+      notify('Could not take over the browser. Try again.', 'error');
+    }
+  };
+
+  const handleReturnControl = async () => {
+    try {
+      const res = await fetch('/api/agent/takeover/return', { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) {
+        notify(data.message || 'Control cannot be returned right now.', 'error');
+        return;
+      }
+      if (data.page_brief) setPageBrief(data.page_brief);
+      setTakeover(data.takeover || { available: true, active: false });
+      if (data.state) setRunState(data.state);
+      notify(
+        'Control returned. The page was re-read; review it, then press Continue.',
+        'info',
+      );
+    } catch (err) {
+      console.error('Return control error:', err);
+      notify('Could not return control. Try again.', 'error');
+    }
+  };
+
+  const handlePauseToggle = async () => {
+    const wasPaused = runState === 'PAUSED';
+    try {
+      const res = await fetch(wasPaused ? '/api/agent/resume' : '/api/agent/pause', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!data.success) {
+        notify(data.message || 'That action is not available right now.', 'error');
+        return;
+      }
+      setRunState(data.state || (wasPaused ? 'RUNNING' : 'PAUSED'));
+      notify(wasPaused ? 'Application resumed.' : 'Paused. The agent will wait for you.', 'info');
+    } catch (err) {
+      console.error('Pause/resume error:', err);
+      notify('Could not change the application state. Try again.', 'error');
+    }
+  };
+
+  // Submit Candidate Gate Response
+  const handleSubmitUserResponse = async (payload) => {
+    try {
+      setCurrentGate(null);
+      setGateHidden(false);
+      gateKeyRef.current = '';
+      await fetch('/api/agent/user-response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.error('User response submission error:', err);
+      notify('Your response could not be sent. Please try again.', 'error');
+    }
+  };
+
+  const handleDismissGate = async () => {
+    setCurrentGate(null);
+    setGateHidden(false);
+    gateKeyRef.current = '';
+    try {
+      await fetch('/api/agent/dismiss-gate', { method: 'POST' });
+    } catch (err) {
+      console.error('Dismiss gate error:', err);
+    }
+  };
+
+  const handleRescan = async () => {
+    setRescanning(true);
+    try {
+      const res = await fetch('/api/agent/inspect/scan', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setFormMap(data.form_map || null);
+        setRecipe(data.recipe || null);
+        notify('Page mapped again.', 'success');
+      } else {
+        notify('Rescan failed. Make sure the live browser is still open.', 'error');
+      }
+    } catch (err) {
+      console.error('Rescan error:', err);
+      notify('Could not rescan this page.', 'error');
+    } finally {
+      setRescanning(false);
+    }
+  };
+
+  // Send a chat message. The candidate's message is stored locally first so the
+  // conversation stays intact while the WebSocket reply is in flight.
+  const handleSendChatMessage = async (msgText) => {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setChatMessages((prev) => [...prev, { sender: 'Candidate', text: msgText, time }]);
+    try {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          action: 'SEND_CHAT',
+          message: msgText
+        }));
+      } else {
+        const res = await fetch('/api/chat/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msgText })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              sender: 'FormPilot',
+              text: data.reply,
+              time: data.timestamp || time,
+              action_taken: data.action_taken,
+              field_updated: data.field_updated,
+              new_value: data.new_value,
+              entry_mode: data.entry_mode,
+              login_method: data.login_method,
+              login_identifier: data.login_identifier
+            }
+          ]);
+        } else {
+          notify('FormPilot could not answer that message.', 'error');
+        }
+      }
+    } catch (err) {
+      console.error('Chat error:', err);
+      notify('The message could not be sent.', 'error');
+    }
+  };
+
+  useEffect(() => {
+    if (runState === 'INSPECT_READY') setRightTab('brief');
+  }, [runState]);
+
+  useEffect(() => {
+    if (['INSPECT_READY', 'RUNNING', 'WAITING_FOR_USER', 'PAUSED'].includes(runState)) {
+      fetchPageBrief(false);
+    }
+  }, [runState, fetchPageBrief]);
+
+  const handleRefreshBrief = async () => {
+    setBriefRefreshing(true);
+    try {
+      await fetchPageBrief(true);
+      notify('Page brief refreshed.', 'success');
+    } finally {
+      setBriefRefreshing(false);
+    }
+  };
+
+  const viewportHeightClass = sessionVisible
+    ? 'min-h-[380px] h-[52vh] sm:h-[620px] lg:h-[calc(100vh-278px)] lg:min-h-[560px] lg:max-h-[900px]'
+    : 'min-h-[340px] h-[48vh] sm:h-[580px] lg:h-[calc(100vh-470px)] lg:min-h-[480px] lg:max-h-[760px]';
+
+  const panels = [
+    {
+      id: 'chat',
+      label: 'Copilot',
+      icon: NeuralSparkleIcon,
+      count: null,
+      hint: 'Questions and real-time guidance',
+    },
+    {
+      id: 'brief',
+      label: 'Page brief',
+      icon: FileText,
+      count: pageBrief
+        ? (pageBrief.sections || []).reduce((total, section) => total + (section.questions?.length || 0), 0)
+        : null,
+      hint: 'What this page wants',
+    },
+    {
+      id: 'map',
+      label: 'DOM map',
+      icon: ScanSearch,
+      count: (formMap?.field_count || 0) + (formMap?.gateways?.length || 0),
+      hint: 'Fields, locators and recipes',
+    },
+    {
+      id: 'stream',
+      label: 'Cognition',
+      icon: Terminal,
+      count: events.length,
+      hint: 'Step-by-step updates',
+    },
+  ];
+
+  // Sync with URL Hash for real browser history & deep bookmarking (#/vault, #/biometrics, #/runs, #/settings, etc.)
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      const valid = ['portal', 'vault', 'biometrics', 'runs', 'stream', 'map', 'settings', 'help'];
+      if (valid.includes(hash)) {
+        setSidebarNav(hash);
+      } else if (!hash) {
+        setSidebarNav('portal');
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
+  const handleSelectNav = (item) => {
+    setSidebarNav(item);
+    window.location.hash = `#/${item}`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (!authChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0d1210] text-slate-400">
+        <div className="flex items-center gap-3 text-xs font-semibold tracking-wide">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400" />
+          Opening your workspace…
+        </div>
+      </div>
+    );
+  }
+
+  if (needsAuth || (authGateOpen && !account)) {
+    return (
+      <AuthPage
+        status={authStatus}
+        onAuthenticated={handleAuthenticated}
+        onContinueAsGuest={handleContinueAsGuest}
+      />
+    );
+  }
+
+  return (
+    <div className="relative flex min-h-screen bg-[#0d1210] font-['Plus_Jakarta_Sans',sans-serif] text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(143, 184, 169,0.05),transparent_70%)]" />
+
+      {/* Left Collapsible Sidebar */}
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        activeItem={sidebarNav}
+        onSelectNav={handleSelectNav}
+        sessionVisible={sessionVisible}
+        agentRunning={agentRunning}
+        liveSession={liveSession}
+        formMap={formMap}
+        readiness={readiness}
+        currentGate={currentGate}
+        vault={vault}
+        account={account}
+        accountsEnabled={authStatus?.accounts_enabled !== false}
+        onOpenAuth={handleOpenAuth}
+        onLogout={handleLogout}
+      />
+
+      {/* Main Workspace Stage */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen-safe overflow-hidden">
+        <Header
+          agentRunning={agentRunning}
+          paused={paused}
+          runState={runState}
+          engineConfig={engineConfig}
+          readiness={readiness}
+          onSelectNav={handleSelectNav}
+          onPauseToggle={handlePauseToggle}
+          voiceEnabled={voiceEnabled}
+          setVoiceEnabled={setVoiceEnabled}
+          currentGate={currentGate}
+          copilotDocked={copilotMode === 'docked'}
+          copilotMinimized={copilotMinimized}
+          account={account}
+          accountsEnabled={authStatus?.accounts_enabled !== false}
+          onOpenAuth={handleOpenAuth}
+          onLogout={handleLogout}
+          onToggleCopilot={() => {
+            if (copilotMode === 'floating') {
+              setCopilotMode('docked');
+              setCopilotMinimized(false);
+            } else {
+              setCopilotMinimized(!copilotMinimized);
+            }
+          }}
+        />
+
+        {/* 2-Pane / 3-Pane Workstation Stage: Center Canvas + Docked RHS Copilot */}
+        <div className="flex-1 flex min-w-0 overflow-hidden">
+          {/* Center Main Stage Canvas */}
+          <div className="flex-1 min-w-0 overflow-y-auto flex flex-col pb-[84px] lg:pb-0">
+            {sidebarNav === 'vault' ? (
+              <VaultPage
+                vault={vault}
+                vaultError={vaultError}
+                onRetryVault={fetchVault}
+                onVaultUpdate={(v) => setVault(v)}
+                notify={notify}
+              />
+            ) : sidebarNav === 'biometrics' ? (
+              <BiometricsPage notify={notify} />
+            ) : sidebarNav === 'runs' ? (
+              <AuditLedgerPage notify={notify} onSelectRun={(id) => { setRunId(id); handleSelectNav('portal'); }} />
+            ) : sidebarNav === 'settings' ? (
+              <SettingsPage onConfigSaved={(cfg) => setEngineConfig(cfg)} notify={notify} />
+            ) : sidebarNav === 'help' ? (
+              <HelpPage
+                onReplayTour={() => setTourOpen(true)}
+                onSelectNav={handleSelectNav}
+              />
+            ) : sidebarNav === 'docs' ? (
+              <TechDocsPage onSelectNav={handleSelectNav} />
+            ) : sidebarNav === 'stream' ? (
+              <CognitiveStreamPage events={events} voiceEnabled={voiceEnabled} />
+            ) : sidebarNav === 'map' ? (
+              <DomTelemetryPage formMap={formMap} recipe={recipe} runMode={runMode} onRescan={handleRescan} rescanning={rescanning} />
+            ) : (
+              <main className="relative mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-3 pb-8 pt-3 sm:px-5">
+                {sessionVisible && (
+                  <SessionStrip
+                    runState={runState}
+                    runMode={runMode}
+                    currentSection={currentSection}
+                    formMap={formMap}
+                    recipe={recipe}
+                    readiness={readiness}
+                    query={query}
+                    targetUrl={liveSession?.url || formMap?.url || ''}
+                    elapsed={elapsed}
+                    paused={paused}
+                    runId={runId}
+                    fillSummary={fillSummary}
+                    entryMode={entryMode}
+                    loginMethod={loginMethod}
+                    onPauseToggle={handlePauseToggle}
+                    onNewSession={handleNewSession}
+                  />
+                )}
+
+                {(!sessionVisible || relaunchable) && (
+                  <div className={sessionVisible ? 'mt-4' : ''}>
+                    <PortalLauncher
+                      onLaunch={handleLaunch}
+                      agentRunning={agentRunning}
+                      sessionOpen={busy}
+                    />
+                  </div>
+                )}
+
+                {lastError && (
+                  <div className="animate-fadeIn mt-3 flex items-center justify-between rounded-xl border border-red-500/35 bg-red-950/40 px-3.5 py-2 text-xs text-red-200 shadow-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-extrabold text-red-400 shrink-0">Session Notice:</span>
+                      <span className="truncate">{lastError}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLastError('')}
+                      className="ml-2 rounded-lg p-1 text-red-400 hover:bg-red-500/20 hover:text-red-200 transition-colors"
+                      title="Dismiss notice"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {['PARTIAL', 'FAILED'].includes(fillSummary?.status) && (
+                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3.5 py-2.5 text-[11px] text-amber-100">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                    <span>
+                      <span className="font-bold">This form is not fully filled.</span>{' '}
+                      {fillSummary?.verified || 0} of {fillSummary?.attempted || 0} fields were verified
+                      {fillSummary?.failed ? `, ${fillSummary.failed} failed` : ''}
+                      {fillSummary?.skipped ? `, ${fillSummary.skipped} skipped` : ''}. Review the
+                      highlighted fields in the live browser; FormPilot will not report this section as
+                      filled.
+                    </span>
+                  </div>
+                )}
+
+                {/* Viewport Stage */}
+                <div className="mt-4 flex-1 w-full flex flex-col">
+                  <LiveViewport
+                    className={viewportHeightClass}
+                    screenshot={screenshot}
+                    liveSession={liveSession}
+                    agentRunning={agentRunning}
+                    currentSection={currentSection}
+                    onStop={handleStop}
+                    onRescan={handleRescan}
+                    onPauseToggle={handlePauseToggle}
+                    onPractice={handlePractice}
+                    runMode={runMode}
+                    runState={runState}
+                    paused={paused}
+                    takeover={takeover}
+                    onTakeover={handleTakeover}
+                    onReturnControl={handleReturnControl}
+                    pendingGate={currentGate && gateHidden ? currentGate : null}
+                    onOpenGate={() => setGateHidden(false)}
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 px-1 text-[10px] text-slate-500">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    FormPilot never solves CAPTCHA, auto-pays or submits on your behalf.
+                  </span>
+                  <span className="font-mono text-slate-600">
+                    {runId ? `session ${runId}` : 'No active run'}
+                  </span>
+                </div>
+              </main>
+            )}
+
+            <footer className="mt-auto relative border-t border-slate-900 bg-slate-950/80 px-4 py-3 text-center text-[11px] text-slate-500 shrink-0">
+              <p>
+                FormPilot is an independent application assistant. It is not a government website and
+                does not submit applications or make payments on your behalf.
+              </p>
+              <p className="mt-1.5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[10px] text-slate-600">
+                <span>
+                  Built by <span className="font-semibold text-slate-400">Nishant</span>
+                </span>
+                <span aria-hidden="true" className="text-slate-700">·</span>
+                <span>dev:</span>
+                <a
+                  href="https://nishant-kr.vercel.app"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono text-teal-400/90 underline decoration-teal-500/30 underline-offset-2 transition-colors hover:text-teal-300"
+                >
+                  nishant-kr.vercel.app
+                </a>
+              </p>
+            </footer>
+          </div>
+
+          {/* Persistent RHS Copilot & Inspector Rail (Docked Mode) */}
+          {copilotMode === 'docked' && (
+            <aside
+              className={`hidden lg:flex shrink-0 border-l border-white/[0.08] bg-slate-950/50 backdrop-blur-xl flex-col h-full z-20 transition-all duration-300 ${
+                copilotMinimized ? 'w-14' : 'w-[390px] xl:w-[430px]'
+              }`}
+            >
+              <CopilotWindow
+                mode="docked"
+                minimized={copilotMinimized}
+                onToggleMode={() => setCopilotMode('floating')}
+                onToggleMinimize={() => setCopilotMinimized(!copilotMinimized)}
+                rightTab={rightTab}
+                setRightTab={setRightTab}
+                panels={panels}
+                onSendMessage={handleSendChatMessage}
+                chatMessages={chatMessages}
+                voiceEnabled={voiceEnabled}
+                onClearChat={() => setChatMessages([])}
+                entryMode={entryMode}
+                entryOptions={entryOptions}
+                loginMethod={loginMethod}
+                loginIdentifier={loginIdentifier}
+                activeGate={currentGate}
+                pageBrief={pageBrief}
+                runState={runState}
+                onRefreshBrief={handleRefreshBrief}
+                briefRefreshing={briefRefreshing}
+                formMap={formMap}
+                recipe={recipe}
+                runMode={runMode}
+                onRescan={handleRescan}
+                rescanning={rescanning}
+                events={events}
+              />
+            </aside>
+          )}
+        </div>
+      </div>
+
+      {/* Floating Copilot Window (Draggable & Resizable) */}
+      {copilotMode === 'floating' && (
+        <CopilotWindow
+          mode="floating"
+          minimized={copilotMinimized}
+          onToggleMode={() => setCopilotMode('docked')}
+          onToggleMinimize={() => setCopilotMinimized(!copilotMinimized)}
+          rightTab={rightTab}
+          setRightTab={setRightTab}
+          panels={panels}
+          onSendMessage={handleSendChatMessage}
+          chatMessages={chatMessages}
+          voiceEnabled={voiceEnabled}
+          onClearChat={() => setChatMessages([])}
+          entryMode={entryMode}
+          entryOptions={entryOptions}
+          loginMethod={loginMethod}
+          loginIdentifier={loginIdentifier}
+          activeGate={currentGate}
+          pageBrief={pageBrief}
+          runState={runState}
+          onRefreshBrief={handleRefreshBrief}
+          briefRefreshing={briefRefreshing}
+          formMap={formMap}
+          recipe={recipe}
+          runMode={runMode}
+          onRescan={handleRescan}
+          rescanning={rescanning}
+          events={events}
+        />
+      )}
+
+      {/* Sole critical human security checkpoint (OTP / CAPTCHA / Pre-Payment) */}
+      <HumanCheckpointModal
+        activeGate={currentGate}
+        hidden={gateHidden}
+        onSubmitResponse={handleSubmitUserResponse}
+        onClose={() => setGateHidden(true)}
+        onDismissGate={handleDismissGate}
+        liveSession={liveSession}
+        screenshot={screenshot}
+      />
+
+      {/* Floating Dynamic Island & Micro-PiP HUD across all pages */}
+      <FloatingCopilotIsland
+        runState={runState}
+        events={events}
+        activeGate={currentGate}
+        screenshot={screenshot}
+        currentSection={currentSection}
+        onPause={handlePauseToggle}
+        onResume={handlePauseToggle}
+        onOpenGate={() => setGateHidden(false)}
+        onNavigateToCockpit={() => handleSelectNav('portal')}
+        isCockpitView={sidebarNav === 'portal'}
+      />
+
+      <MobileTabBar
+        activeItem={sidebarNav}
+        onSelectNav={handleSelectNav}
+        copilotOpen={copilotMode === 'floating' && !copilotMinimized}
+        onOpenCopilot={() => {
+          if (copilotMode !== 'floating') setCopilotMode('floating');
+          setCopilotMinimized(false);
+        }}
+      />
+
+      <OnboardingTour
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onNavigate={handleSelectNav}
+      />
+
+      <Toasts toasts={toasts} onDismiss={dismissToast} />
+    </div>
+  );
+}

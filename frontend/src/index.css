@@ -1,0 +1,287 @@
+@import "tailwindcss";
+
+/*
+ * Calm palette.
+ *
+ * The product is used during high-stress government applications, so the UI
+ * avoids neon indigo/violet glows.  These overrides keep the existing utility
+ * class names working while shifting the whole app to muted sage, sand and
+ * warm graphite.  Contrast is kept above WCAG AA on the dark base.
+ */
+@theme {
+  --color-slate-50: #f5f7f6;
+  --color-slate-100: #e8ece9;
+  --color-slate-200: #d2d9d5;
+  --color-slate-300: #b3bdb8;
+  --color-slate-400: #8b9791;
+  --color-slate-500: #68746e;
+  --color-slate-600: #48534e;
+  --color-slate-700: #303a35;
+  --color-slate-800: #222a26;
+  --color-slate-900: #171d1a;
+  --color-slate-950: #101412;
+
+  --color-indigo-50: #f0f6f3;
+  --color-indigo-100: #e2eee8;
+  --color-indigo-200: #cfe2d9;
+  --color-indigo-300: #b0cfc3;
+  --color-indigo-400: #8fb8a9;
+  --color-indigo-500: #74a191;
+  --color-indigo-600: #5c8577;
+  --color-indigo-700: #4b6d62;
+  --color-indigo-800: #3c564e;
+  --color-indigo-900: #324740;
+  --color-indigo-950: #192621;
+
+  --color-violet-200: #e6dbcf;
+  --color-violet-300: #d6c7b6;
+  --color-violet-400: #c2b09a;
+  --color-violet-500: #ab967d;
+  --color-violet-600: #917c63;
+  --color-violet-700: #75634f;
+  --color-violet-950: #2a241e;
+
+  --color-emerald-100: #e6f2eb;
+  --color-emerald-200: #d3e7dc;
+  --color-emerald-300: #b3d2c1;
+  --color-emerald-400: #8fbea7;
+  --color-emerald-500: #74a58d;
+  --color-emerald-600: #5d8a74;
+  --color-emerald-700: #4b705e;
+  --color-emerald-950: #16251e;
+
+  --color-teal-300: #b3d2c1;
+  --color-teal-400: #8fbea7;
+  --color-teal-500: #74a58d;
+  --color-teal-600: #5d8a74;
+  --color-teal-700: #4b705e;
+  --color-teal-950: #16251e;
+
+  --color-amber-200: #ecdfc9;
+  --color-amber-300: #dfcba9;
+  --color-amber-400: #cfb78f;
+  --color-amber-500: #b89e73;
+  --color-amber-600: #9a825c;
+  --color-amber-950: #2a241a;
+
+  --color-sky-300: #b7cdd6;
+  --color-sky-400: #97b6c2;
+  --color-sky-500: #7d9daa;
+  --color-sky-600: #67828d;
+  --color-sky-950: #1a2529;
+
+  --color-rose-300: #dcb9b3;
+  --color-rose-400: #c99b94;
+  --color-rose-500: #b3827a;
+  --color-rose-600: #966b64;
+  --color-rose-950: #2a1d1b;
+
+  --color-red-400: #cf9a91;
+  --color-red-500: #b98077;
+  --color-red-950: #2a1b18;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: #0d1210;
+    color: #eef2f0;
+    min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.011em;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+  }
+
+  /* Android Chrome and iOS Safari zoom the page when a focused input is
+     smaller than 16px.  Keep form text at 16px on small screens only; the
+     desktop typography is unchanged. */
+  @media (max-width: 640px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+      line-height: 1.35 !important;
+    }
+  }
+}
+
+/* Mobile cockpit: respect the notch, the home bar and the on-screen keyboard. */
+.safe-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.safe-top {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+.safe-x {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+}
+
+/* 100dvh follows the Android URL bar and the on-screen keyboard; 100vh does
+   not, which is what makes "full height" panels jump. */
+.h-screen-safe {
+  height: 100dvh;
+}
+
+/* A horizontally scrollable strip of tabs or chips that still feels native. */
+.mobile-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.mobile-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+/* Glassmorphism System — soft, low-contrast, no neon bloom. */
+.glass-panel {
+  background-color: rgba(17, 24, 21, 0.78);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+              0 8px 24px -12px rgba(0, 0, 0, 0.55);
+}
+
+.glass-panel-elevated {
+  background-color: rgba(21, 30, 26, 0.88);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+              0 16px 36px -18px rgba(0, 0, 0, 0.65);
+}
+
+.glass-input {
+  background-color: rgba(12, 18, 15, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.glass-input:focus {
+  border-color: rgba(143, 184, 169, 0.55);
+  box-shadow: 0 0 0 3px rgba(143, 184, 169, 0.12), inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* Kept as class names because many components use them; the bloom is gone. */
+.glow-indigo,
+.glow-emerald,
+.glow-amber {
+  box-shadow: 0 8px 22px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.specular-top {
+  position: relative;
+}
+
+.specular-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  pointer-events: none;
+}
+
+/* Custom crisp dark scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Radar scanline animation for live viewport */
+@keyframes radar-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
+
+.animate-scanline {
+  animation: radar-scan 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Panel and message entrance */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.toast-in {
+  animation: toastIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite;
+}
+
+.cyber-grid {
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scanline,
+  .animate-fadeIn,
+  .animate-shimmer,
+  .toast-in {
+    animation: none;
+  }
+}

@@ -1,0 +1,2034 @@
+{
+  "exam_id": "NTA_JEE_MAIN_2027",
+  "authority_name": "National Testing Agency (NTA)",
+  "exam_title": "Joint Entrance Examination (Main) – 2027",
+  "cycle_year": 2027,
+  "version": "1.0.0",
+  "source_pdf_filename": "JEE-info_bulletein.pdf",
+  "total_pages_in_pdf": 93,
+  "verification_date": "2026-11-17",
+  "verified_by": "Lead Systems Engineer, FormPilot Architecture",
+  "password_policy": {
+    "min_length": 8,
+    "max_length": 13,
+    "require_uppercase": true,
+    "require_lowercase": true,
+    "require_digit": true,
+    "require_special_char": true,
+    "allowed_special_chars": "!@#$%^&*-",
+    "clause_reference": "Page 10, Clause Important Instruction about PASSWORD"
+  },
+  "documents": {
+    "photo": {
+      "document_key": "photo",
+      "title_en": "Candidate Scanned Photograph",
+      "title_hi": "उम्मीदवार की स्कैन की गई तस्वीर",
+      "formats": [
+        "jpg",
+        "jpeg"
+      ],
+      "min_size_kb": 10,
+      "max_size_kb": 200,
+      "aspect_ratio": null,
+      "face_coverage_percent": 80,
+      "background_color": "white",
+      "mandatory": true,
+      "page_reference": 8,
+      "clause_reference": "Chapter 1, Step 2 / Page 8"
+    },
+    "signature": {
+      "document_key": "signature",
+      "title_en": "Candidate Scanned Signature",
+      "title_hi": "उम्मीदवार के स्कैन किए गए हस्ताक्षर",
+      "formats": [
+        "jpg",
+        "jpeg"
+      ],
+      "min_size_kb": 10,
+      "max_size_kb": 100,
+      "aspect_ratio": null,
+      "face_coverage_percent": null,
+      "background_color": null,
+      "mandatory": true,
+      "page_reference": 8,
+      "clause_reference": "Chapter 1, Step 2 / Page 8"
+    },
+    "matric_certificate": {
+      "document_key": "matric_certificate",
+      "title_en": "Class 10 Certificate / Marksheet",
+      "title_hi": "कक्षा 10 का प्रमाण पत्र या अंकतालिका",
+      "formats": [
+        "pdf"
+      ],
+      "min_size_kb": 50,
+      "max_size_kb": 300,
+      "aspect_ratio": null,
+      "face_coverage_percent": null,
+      "background_color": null,
+      "mandatory": true,
+      "page_reference": 8,
+      "clause_reference": "Chapter 1, Step 2 / Page 8"
+    },
+    "udid_certificate": {
+      "document_key": "udid_certificate",
+      "title_en": "Disability (UDID) Certificate",
+      "title_hi": "दिव्यांगता (यूडीआईडी) प्रमाण पत्र",
+      "formats": [
+        "pdf"
+      ],
+      "min_size_kb": 50,
+      "max_size_kb": 300,
+      "aspect_ratio": null,
+      "face_coverage_percent": null,
+      "background_color": null,
+      "mandatory": false,
+      "page_reference": 9,
+      "clause_reference": "Chapter 1, Step 2 / Page 9"
+    }
+  },
+  "phases": [
+    {
+      "phase_order": 1,
+      "phase_id": "REGISTRATION",
+      "title_en": "Online Registration & Single Sign-On",
+      "title_hi": "ऑनलाइन पंजीकरण एवं सिंगल साइन-ऑन",
+      "sections": [
+        {
+          "section_index": 1,
+          "section_id": "registration_identity",
+          "title_en": "Personal & Communication Details",
+          "title_hi": "व्यक्तिगत एवं संचार विवरण",
+          "page_number_in_bulletin": 74,
+          "screenshot_ids": [
+            "page_74_img_2_Image335.jpg",
+            "page_74_img_3_Image336.jpg"
+          ],
+          "fields": [
+            {
+              "field_id": "candidate_name",
+              "canonical_concept": "full_name",
+              "label_en": "Candidate's Name",
+              "label_hi": "अभ्यर्थी का नाम",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "full_name",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "father_name",
+              "canonical_concept": "father_name",
+              "label_en": "Father / Guardian Name",
+              "label_hi": "पिता / अभिभावक का नाम",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "father_name",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "mother_name",
+              "canonical_concept": "mother_name",
+              "label_en": "Mother / Guardian Name",
+              "label_hi": "माता / अभिभावक का नाम",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "mother_name",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "dob_day",
+              "canonical_concept": "dob_day",
+              "label_en": "Date of Birth (Day)",
+              "label_hi": "जन्म तिथि (दिन)",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": "dob_day",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "dob_month",
+              "canonical_concept": "dob_month",
+              "label_en": "Date of Birth (Month)",
+              "label_hi": "जन्म तिथि (माह)",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": "dob_month",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "dob_year",
+              "canonical_concept": "dob_year",
+              "label_en": "Date of Birth (Year)",
+              "label_hi": "जन्म तिथि (वर्ष)",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": "dob_year",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "gender",
+              "canonical_concept": "gender",
+              "label_en": "Gender",
+              "label_hi": "लिंग",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": "gender",
+              "placeholder": "",
+              "options": [
+                {
+                  "value": "Male",
+                  "label_en": "Male",
+                  "label_hi": "पुरुष"
+                },
+                {
+                  "value": "Female",
+                  "label_en": "Female",
+                  "label_hi": "महिला"
+                },
+                {
+                  "value": "Third Gender",
+                  "label_en": "Third Gender",
+                  "label_hi": "थर्ड जेंडर"
+                }
+              ],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "present_address_premises",
+              "canonical_concept": "present_address_line_1",
+              "label_en": "Premises No. / Name",
+              "label_hi": "परिसर संख्या / नाम",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "present_address_line_1",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "present_address_locality",
+              "canonical_concept": "present_address_line_2",
+              "label_en": "Locality",
+              "label_hi": "स्थानीयता",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "present_address_line_2",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "present_address_state",
+              "canonical_concept": "present_state",
+              "label_en": "State",
+              "label_hi": "राज्य",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": "present_state",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "present_address_district",
+              "canonical_concept": "present_district",
+              "label_en": "District",
+              "label_hi": "जिला",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": "present_district",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "present_address_pincode",
+              "canonical_concept": "present_pincode",
+              "label_en": "PIN Code",
+              "label_hi": "पिन कोड",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "present_pincode",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": 6,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "email",
+              "canonical_concept": "email",
+              "label_en": "Email Address",
+              "label_hi": "ईमेल पता",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "email",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "mobile",
+              "canonical_concept": "mobile",
+              "label_en": "Mobile Number",
+              "label_hi": "मोबाइल नंबर",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "mobile",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": 10,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "password",
+              "canonical_concept": "account_password",
+              "label_en": "Password",
+              "label_hi": "कुंजिका",
+              "input_kind": "password",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "verify_password",
+              "canonical_concept": "verify_password",
+              "label_en": "Confirm Password",
+              "label_hi": "कुंजिका की पुष्टि करें",
+              "input_kind": "password",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": "password",
+              "page_reference": 74,
+              "screenshot_evidence_id": null
+            }
+          ],
+          "conditional_rules": [],
+          "submit_button_text_en": "Save & Next",
+          "submit_button_text_hi": "सुरक्षित करें और आगे बढ़ें",
+          "is_human_gate": false,
+          "human_gate_type": null
+        }
+      ]
+    },
+    {
+      "phase_order": 2,
+      "phase_id": "APPLICATION_FORM",
+      "title_en": "Application Form Specifics",
+      "title_hi": "आवेदन पत्र का विवरण",
+      "sections": [
+        {
+          "section_index": 2,
+          "section_id": "personal_details",
+          "title_en": "Personal Details & Category",
+          "title_hi": "व्यक्तिगत विवरण एवं श्रेणी",
+          "page_number_in_bulletin": 76,
+          "screenshot_ids": [
+            "page_76_img_1_Image354.jpg"
+          ],
+          "fields": [
+            {
+              "field_id": "category",
+              "canonical_concept": "category",
+              "label_en": "Category",
+              "label_hi": "श्रेणी",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": "category",
+              "placeholder": "",
+              "options": [
+                {
+                  "value": "General",
+                  "label_en": "General",
+                  "label_hi": "सामान्य"
+                },
+                {
+                  "value": "Gen-EWS",
+                  "label_en": "Gen-EWS",
+                  "label_hi": "जनरल-ईडब्ल्यूएस"
+                },
+                {
+                  "value": "OBC-NCL",
+                  "label_en": "OBC-NCL (Central List)",
+                  "label_hi": "ओबीसी-एनसीएल"
+                },
+                {
+                  "value": "SC",
+                  "label_en": "SC",
+                  "label_hi": "अनुसूचित जाति"
+                },
+                {
+                  "value": "ST",
+                  "label_en": "ST",
+                  "label_hi": "अनुसूचित जनजाति"
+                }
+              ],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "has_category_cert",
+              "canonical_concept": "has_category_cert",
+              "label_en": "Do you have a valid category certificate?",
+              "label_hi": "क्या आपके पास वैध श्रेणी प्रमाण पत्र है ?",
+              "input_kind": "select",
+              "required": false,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [
+                {
+                  "value": "Yes",
+                  "label_en": "Yes",
+                  "label_hi": "हाँ"
+                },
+                {
+                  "value": "No",
+                  "label_en": "No",
+                  "label_hi": "नहीं"
+                }
+              ],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "category_cert_no",
+              "canonical_concept": "caste_certificate_number",
+              "label_en": "Category Certificate ID / Number",
+              "label_hi": "श्रेणी प्रमाणपत्र संख्या",
+              "input_kind": "text",
+              "required": false,
+              "vault_key": "caste_certificate_number",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "category_cert_date",
+              "canonical_concept": "caste_cert_issue_date",
+              "label_en": "Category Certificate Issue Date",
+              "label_hi": "प्रमाणपत्र जारी करने की तिथि",
+              "input_kind": "date",
+              "required": false,
+              "vault_key": "caste_cert_issue_date",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "category_cert_authority",
+              "canonical_concept": "caste_cert_authority",
+              "label_en": "Name of Issuing Authority",
+              "label_hi": "जारी करने वाले प्राधिकारी का नाम",
+              "input_kind": "text",
+              "required": false,
+              "vault_key": "caste_cert_authority",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "is_diabetic",
+              "canonical_concept": "is_diabetic",
+              "label_en": "Are you Diabetic?",
+              "label_hi": "क्या आपको मधुमेह है ?",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [
+                {
+                  "value": "No",
+                  "label_en": "No",
+                  "label_hi": "नहीं"
+                },
+                {
+                  "value": "Yes",
+                  "label_en": "Yes",
+                  "label_hi": "हाँ"
+                }
+              ],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "annual_family_income",
+              "canonical_concept": "family_income",
+              "label_en": "Annual Family Income",
+              "label_hi": "वार्षिक पारिवारिक आय",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": "family_income",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            }
+          ],
+          "conditional_rules": [
+            {
+              "trigger_field": "category",
+              "trigger_values": [
+                "OBC-NCL",
+                "SC",
+                "ST"
+              ],
+              "action": "show",
+              "target_fields": [
+                "has_category_cert",
+                "category_cert_no",
+                "category_cert_date",
+                "category_cert_authority"
+              ],
+              "description": "If Category is SC, ST, or OBC-NCL, certificate fields become active."
+            }
+          ],
+          "submit_button_text_en": "Save & Next",
+          "submit_button_text_hi": "सुरक्षित करें और आगे बढ़ें",
+          "is_human_gate": false,
+          "human_gate_type": null
+        },
+        {
+          "section_index": 3,
+          "section_id": "exam_centre_details",
+          "title_en": "Paper Applied & Exam Centre Choices",
+          "title_hi": "आवेदन का पेपर एवं परीक्षा शहर",
+          "page_number_in_bulletin": 80,
+          "screenshot_ids": [
+            "page_80_img_1_Image397.jpg"
+          ],
+          "fields": [
+            {
+              "field_id": "apply_for_paper1",
+              "canonical_concept": "apply_for_paper1",
+              "label_en": "Paper 1 (B.E./B.Tech)",
+              "label_hi": "पेपर 1 (बी.ई./बी.टेक)",
+              "input_kind": "checkbox",
+              "required": false,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "apply_for_paper2a",
+              "canonical_concept": "apply_for_paper2a",
+              "label_en": "Paper 2A (B.Arch)",
+              "label_hi": "पेपर 2A (बी.आर्क)",
+              "input_kind": "checkbox",
+              "required": false,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "apply_for_paper2b",
+              "canonical_concept": "apply_for_paper2b",
+              "label_en": "Paper 2B (B.Planning)",
+              "label_hi": "पेपर 2B (बी.प्लानिंग)",
+              "input_kind": "checkbox",
+              "required": false,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "exam_session",
+              "canonical_concept": "exam_session",
+              "label_en": "Session of Exam Apply For",
+              "label_hi": "परीक्षा सत्र",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [
+                {
+                  "value": "Session 1",
+                  "label_en": "Session 1",
+                  "label_hi": "सत्र 1"
+                },
+                {
+                  "value": "Session 2",
+                  "label_en": "Session 2",
+                  "label_hi": "सत्र 2"
+                },
+                {
+                  "value": "Both",
+                  "label_en": "Both Sessions",
+                  "label_hi": "दोनों सत्र"
+                }
+              ],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "question_paper_medium",
+              "canonical_concept": "question_paper_medium",
+              "label_en": "Question Paper Medium",
+              "label_hi": "प्रश्न पत्र माध्यम",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [
+                {
+                  "value": "English",
+                  "label_en": "English",
+                  "label_hi": "अंग्रेजी"
+                },
+                {
+                  "value": "Hindi",
+                  "label_en": "Hindi",
+                  "label_hi": "हिंदी"
+                }
+              ],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "exam_city_choice_1",
+              "canonical_concept": "exam_city_choice_1",
+              "label_en": "Exam City Choice 1",
+              "label_hi": "परीक्षा शहर प्रथम पसंद",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "exam_city_choice_2",
+              "canonical_concept": "exam_city_choice_2",
+              "label_en": "Exam City Choice 2",
+              "label_hi": "परीक्षा शहर द्वितीय पसंद",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "exam_city_choice_3",
+              "canonical_concept": "exam_city_choice_3",
+              "label_en": "Exam City Choice 3",
+              "label_hi": "परीक्षा शहर तृतीय पसंद",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "exam_city_choice_4",
+              "canonical_concept": "exam_city_choice_4",
+              "label_en": "Exam City Choice 4",
+              "label_hi": "परीक्षा शहर चतुर्थ पसंद",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "father_occupation",
+              "canonical_concept": "father_occupation",
+              "label_en": "Father's Occupation",
+              "label_hi": "पिता का व्यवसाय",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "father_qualification",
+              "canonical_concept": "father_qualification",
+              "label_en": "Father's Qualification",
+              "label_hi": "पिता की योग्यता",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "mother_occupation",
+              "canonical_concept": "mother_occupation",
+              "label_en": "Mother's Occupation",
+              "label_hi": "माता का व्यवसाय",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "mother_qualification",
+              "canonical_concept": "mother_qualification",
+              "label_en": "Mother's Qualification",
+              "label_hi": "माता की योग्यता",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            }
+          ],
+          "conditional_rules": [],
+          "submit_button_text_en": "Save & Next",
+          "submit_button_text_hi": "सुरक्षित करें और आगे बढ़ें",
+          "is_human_gate": false,
+          "human_gate_type": null
+        },
+        {
+          "section_index": 4,
+          "section_id": "emergency_contact_details",
+          "title_en": "Emergency Contact Details",
+          "title_hi": "आपातकालीन संपर्क विवरण",
+          "page_number_in_bulletin": 81,
+          "screenshot_ids": [
+            "page_81_img_2_Image406.jpg"
+          ],
+          "fields": [
+            {
+              "field_id": "emergency_country_code",
+              "canonical_concept": "country_code",
+              "label_en": "Country Code",
+              "label_hi": "देश कोड",
+              "input_kind": "select",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "emergency_mobile",
+              "canonical_concept": "alternate_mobile",
+              "label_en": "Parent / Guardian Mobile Number",
+              "label_hi": "माता-पिता / अभिभावक का मोबाइल नंबर",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "alternate_mobile",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": 10,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "emergency_email",
+              "canonical_concept": "alternate_email",
+              "label_en": "Parent / Guardian Email Address",
+              "label_hi": "माता-पिता / अभिभावक का ईमेल",
+              "input_kind": "text",
+              "required": true,
+              "vault_key": "alternate_email",
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            }
+          ],
+          "conditional_rules": [],
+          "submit_button_text_en": "Save & Next",
+          "submit_button_text_hi": "सुरक्षित करें और आगे बढ़ें",
+          "is_human_gate": true,
+          "human_gate_type": "OTP_RELAY"
+        },
+        {
+          "section_index": 5,
+          "section_id": "document_uploads",
+          "title_en": "Document Uploads",
+          "title_hi": "दस्तावेज़ अपलोड",
+          "page_number_in_bulletin": 83,
+          "screenshot_ids": [
+            "page_83_img_3_Image426.jpg"
+          ],
+          "fields": [
+            {
+              "field_id": "upload_photo",
+              "canonical_concept": "photo_upload",
+              "label_en": "Photograph (10 KB to 200 KB)",
+              "label_hi": "फोटोग्राफ",
+              "input_kind": "file",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "upload_signature",
+              "canonical_concept": "signature_upload",
+              "label_en": "Signature (10 KB to 100 KB)",
+              "label_hi": "हस्ताक्षर",
+              "input_kind": "file",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            },
+            {
+              "field_id": "upload_matric_cert",
+              "canonical_concept": "matric_cert_upload",
+              "label_en": "Class 10 Certificate/Marks-sheet PDF (50 KB to 300 KB)",
+              "label_hi": "कक्षा 10 प्रमाण पत्र",
+              "input_kind": "file",
+              "required": true,
+              "vault_key": null,
+              "placeholder": "",
+              "options": [],
+              "validation_regex": null,
+              "min_length": null,
+              "max_length": null,
+              "exact_length": null,
+              "auto_reused_from": null,
+              "page_reference": 0,
+              "screenshot_evidence_id": null
+            }
+          ],
+          "conditional_rules": [],
+          "submit_button_text_en": "Save & Next",
+          "submit_button_text_hi": "सुरक्षित करें और आगे बढ़ें",
+          "is_human_gate": false,
+          "human_gate_type": null
+        }
+      ]
+    }
+  ],
+  "all_fields_by_id": {
+    "candidate_name": {
+      "field_id": "candidate_name",
+      "canonical_concept": "full_name",
+      "label_en": "Candidate's Name",
+      "label_hi": "अभ्यर्थी का नाम",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "full_name",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "father_name": {
+      "field_id": "father_name",
+      "canonical_concept": "father_name",
+      "label_en": "Father / Guardian Name",
+      "label_hi": "पिता / अभिभावक का नाम",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "father_name",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "mother_name": {
+      "field_id": "mother_name",
+      "canonical_concept": "mother_name",
+      "label_en": "Mother / Guardian Name",
+      "label_hi": "माता / अभिभावक का नाम",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "mother_name",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "dob_day": {
+      "field_id": "dob_day",
+      "canonical_concept": "dob_day",
+      "label_en": "Date of Birth (Day)",
+      "label_hi": "जन्म तिथि (दिन)",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": "dob_day",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "dob_month": {
+      "field_id": "dob_month",
+      "canonical_concept": "dob_month",
+      "label_en": "Date of Birth (Month)",
+      "label_hi": "जन्म तिथि (माह)",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": "dob_month",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "dob_year": {
+      "field_id": "dob_year",
+      "canonical_concept": "dob_year",
+      "label_en": "Date of Birth (Year)",
+      "label_hi": "जन्म तिथि (वर्ष)",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": "dob_year",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "gender": {
+      "field_id": "gender",
+      "canonical_concept": "gender",
+      "label_en": "Gender",
+      "label_hi": "लिंग",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": "gender",
+      "placeholder": "",
+      "options": [
+        {
+          "value": "Male",
+          "label_en": "Male",
+          "label_hi": "पुरुष"
+        },
+        {
+          "value": "Female",
+          "label_en": "Female",
+          "label_hi": "महिला"
+        },
+        {
+          "value": "Third Gender",
+          "label_en": "Third Gender",
+          "label_hi": "थर्ड जेंडर"
+        }
+      ],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "present_address_premises": {
+      "field_id": "present_address_premises",
+      "canonical_concept": "present_address_line_1",
+      "label_en": "Premises No. / Name",
+      "label_hi": "परिसर संख्या / नाम",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "present_address_line_1",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "present_address_locality": {
+      "field_id": "present_address_locality",
+      "canonical_concept": "present_address_line_2",
+      "label_en": "Locality",
+      "label_hi": "स्थानीयता",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "present_address_line_2",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "present_address_state": {
+      "field_id": "present_address_state",
+      "canonical_concept": "present_state",
+      "label_en": "State",
+      "label_hi": "राज्य",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": "present_state",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "present_address_district": {
+      "field_id": "present_address_district",
+      "canonical_concept": "present_district",
+      "label_en": "District",
+      "label_hi": "जिला",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": "present_district",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "present_address_pincode": {
+      "field_id": "present_address_pincode",
+      "canonical_concept": "present_pincode",
+      "label_en": "PIN Code",
+      "label_hi": "पिन कोड",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "present_pincode",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": 6,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "email": {
+      "field_id": "email",
+      "canonical_concept": "email",
+      "label_en": "Email Address",
+      "label_hi": "ईमेल पता",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "email",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "mobile": {
+      "field_id": "mobile",
+      "canonical_concept": "mobile",
+      "label_en": "Mobile Number",
+      "label_hi": "मोबाइल नंबर",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "mobile",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": 10,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "password": {
+      "field_id": "password",
+      "canonical_concept": "account_password",
+      "label_en": "Password",
+      "label_hi": "कुंजिका",
+      "input_kind": "password",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "verify_password": {
+      "field_id": "verify_password",
+      "canonical_concept": "verify_password",
+      "label_en": "Confirm Password",
+      "label_hi": "कुंजिका की पुष्टि करें",
+      "input_kind": "password",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": "password",
+      "page_reference": 74,
+      "screenshot_evidence_id": null
+    },
+    "category": {
+      "field_id": "category",
+      "canonical_concept": "category",
+      "label_en": "Category",
+      "label_hi": "श्रेणी",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": "category",
+      "placeholder": "",
+      "options": [
+        {
+          "value": "General",
+          "label_en": "General",
+          "label_hi": "सामान्य"
+        },
+        {
+          "value": "Gen-EWS",
+          "label_en": "Gen-EWS",
+          "label_hi": "जनरल-ईडब्ल्यूएस"
+        },
+        {
+          "value": "OBC-NCL",
+          "label_en": "OBC-NCL (Central List)",
+          "label_hi": "ओबीसी-एनसीएल"
+        },
+        {
+          "value": "SC",
+          "label_en": "SC",
+          "label_hi": "अनुसूचित जाति"
+        },
+        {
+          "value": "ST",
+          "label_en": "ST",
+          "label_hi": "अनुसूचित जनजाति"
+        }
+      ],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "has_category_cert": {
+      "field_id": "has_category_cert",
+      "canonical_concept": "has_category_cert",
+      "label_en": "Do you have a valid category certificate?",
+      "label_hi": "क्या आपके पास वैध श्रेणी प्रमाण पत्र है ?",
+      "input_kind": "select",
+      "required": false,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [
+        {
+          "value": "Yes",
+          "label_en": "Yes",
+          "label_hi": "हाँ"
+        },
+        {
+          "value": "No",
+          "label_en": "No",
+          "label_hi": "नहीं"
+        }
+      ],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "category_cert_no": {
+      "field_id": "category_cert_no",
+      "canonical_concept": "caste_certificate_number",
+      "label_en": "Category Certificate ID / Number",
+      "label_hi": "श्रेणी प्रमाणपत्र संख्या",
+      "input_kind": "text",
+      "required": false,
+      "vault_key": "caste_certificate_number",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "category_cert_date": {
+      "field_id": "category_cert_date",
+      "canonical_concept": "caste_cert_issue_date",
+      "label_en": "Category Certificate Issue Date",
+      "label_hi": "प्रमाणपत्र जारी करने की तिथि",
+      "input_kind": "date",
+      "required": false,
+      "vault_key": "caste_cert_issue_date",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "category_cert_authority": {
+      "field_id": "category_cert_authority",
+      "canonical_concept": "caste_cert_authority",
+      "label_en": "Name of Issuing Authority",
+      "label_hi": "जारी करने वाले प्राधिकारी का नाम",
+      "input_kind": "text",
+      "required": false,
+      "vault_key": "caste_cert_authority",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "is_diabetic": {
+      "field_id": "is_diabetic",
+      "canonical_concept": "is_diabetic",
+      "label_en": "Are you Diabetic?",
+      "label_hi": "क्या आपको मधुमेह है ?",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [
+        {
+          "value": "No",
+          "label_en": "No",
+          "label_hi": "नहीं"
+        },
+        {
+          "value": "Yes",
+          "label_en": "Yes",
+          "label_hi": "हाँ"
+        }
+      ],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "annual_family_income": {
+      "field_id": "annual_family_income",
+      "canonical_concept": "family_income",
+      "label_en": "Annual Family Income",
+      "label_hi": "वार्षिक पारिवारिक आय",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": "family_income",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "apply_for_paper1": {
+      "field_id": "apply_for_paper1",
+      "canonical_concept": "apply_for_paper1",
+      "label_en": "Paper 1 (B.E./B.Tech)",
+      "label_hi": "पेपर 1 (बी.ई./बी.टेक)",
+      "input_kind": "checkbox",
+      "required": false,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "apply_for_paper2a": {
+      "field_id": "apply_for_paper2a",
+      "canonical_concept": "apply_for_paper2a",
+      "label_en": "Paper 2A (B.Arch)",
+      "label_hi": "पेपर 2A (बी.आर्क)",
+      "input_kind": "checkbox",
+      "required": false,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "apply_for_paper2b": {
+      "field_id": "apply_for_paper2b",
+      "canonical_concept": "apply_for_paper2b",
+      "label_en": "Paper 2B (B.Planning)",
+      "label_hi": "पेपर 2B (बी.प्लानिंग)",
+      "input_kind": "checkbox",
+      "required": false,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "exam_session": {
+      "field_id": "exam_session",
+      "canonical_concept": "exam_session",
+      "label_en": "Session of Exam Apply For",
+      "label_hi": "परीक्षा सत्र",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [
+        {
+          "value": "Session 1",
+          "label_en": "Session 1",
+          "label_hi": "सत्र 1"
+        },
+        {
+          "value": "Session 2",
+          "label_en": "Session 2",
+          "label_hi": "सत्र 2"
+        },
+        {
+          "value": "Both",
+          "label_en": "Both Sessions",
+          "label_hi": "दोनों सत्र"
+        }
+      ],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "question_paper_medium": {
+      "field_id": "question_paper_medium",
+      "canonical_concept": "question_paper_medium",
+      "label_en": "Question Paper Medium",
+      "label_hi": "प्रश्न पत्र माध्यम",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [
+        {
+          "value": "English",
+          "label_en": "English",
+          "label_hi": "अंग्रेजी"
+        },
+        {
+          "value": "Hindi",
+          "label_en": "Hindi",
+          "label_hi": "हिंदी"
+        }
+      ],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "exam_city_choice_1": {
+      "field_id": "exam_city_choice_1",
+      "canonical_concept": "exam_city_choice_1",
+      "label_en": "Exam City Choice 1",
+      "label_hi": "परीक्षा शहर प्रथम पसंद",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "exam_city_choice_2": {
+      "field_id": "exam_city_choice_2",
+      "canonical_concept": "exam_city_choice_2",
+      "label_en": "Exam City Choice 2",
+      "label_hi": "परीक्षा शहर द्वितीय पसंद",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "exam_city_choice_3": {
+      "field_id": "exam_city_choice_3",
+      "canonical_concept": "exam_city_choice_3",
+      "label_en": "Exam City Choice 3",
+      "label_hi": "परीक्षा शहर तृतीय पसंद",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "exam_city_choice_4": {
+      "field_id": "exam_city_choice_4",
+      "canonical_concept": "exam_city_choice_4",
+      "label_en": "Exam City Choice 4",
+      "label_hi": "परीक्षा शहर चतुर्थ पसंद",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "father_occupation": {
+      "field_id": "father_occupation",
+      "canonical_concept": "father_occupation",
+      "label_en": "Father's Occupation",
+      "label_hi": "पिता का व्यवसाय",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "father_qualification": {
+      "field_id": "father_qualification",
+      "canonical_concept": "father_qualification",
+      "label_en": "Father's Qualification",
+      "label_hi": "पिता की योग्यता",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "mother_occupation": {
+      "field_id": "mother_occupation",
+      "canonical_concept": "mother_occupation",
+      "label_en": "Mother's Occupation",
+      "label_hi": "माता का व्यवसाय",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "mother_qualification": {
+      "field_id": "mother_qualification",
+      "canonical_concept": "mother_qualification",
+      "label_en": "Mother's Qualification",
+      "label_hi": "माता की योग्यता",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "emergency_country_code": {
+      "field_id": "emergency_country_code",
+      "canonical_concept": "country_code",
+      "label_en": "Country Code",
+      "label_hi": "देश कोड",
+      "input_kind": "select",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "emergency_mobile": {
+      "field_id": "emergency_mobile",
+      "canonical_concept": "alternate_mobile",
+      "label_en": "Parent / Guardian Mobile Number",
+      "label_hi": "माता-पिता / अभिभावक का मोबाइल नंबर",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "alternate_mobile",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": 10,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "emergency_email": {
+      "field_id": "emergency_email",
+      "canonical_concept": "alternate_email",
+      "label_en": "Parent / Guardian Email Address",
+      "label_hi": "माता-पिता / अभिभावक का ईमेल",
+      "input_kind": "text",
+      "required": true,
+      "vault_key": "alternate_email",
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "upload_photo": {
+      "field_id": "upload_photo",
+      "canonical_concept": "photo_upload",
+      "label_en": "Photograph (10 KB to 200 KB)",
+      "label_hi": "फोटोग्राफ",
+      "input_kind": "file",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "upload_signature": {
+      "field_id": "upload_signature",
+      "canonical_concept": "signature_upload",
+      "label_en": "Signature (10 KB to 100 KB)",
+      "label_hi": "हस्ताक्षर",
+      "input_kind": "file",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    },
+    "upload_matric_cert": {
+      "field_id": "upload_matric_cert",
+      "canonical_concept": "matric_cert_upload",
+      "label_en": "Class 10 Certificate/Marks-sheet PDF (50 KB to 300 KB)",
+      "label_hi": "कक्षा 10 प्रमाण पत्र",
+      "input_kind": "file",
+      "required": true,
+      "vault_key": null,
+      "placeholder": "",
+      "options": [],
+      "validation_regex": null,
+      "min_length": null,
+      "max_length": null,
+      "exact_length": null,
+      "auto_reused_from": null,
+      "page_reference": 0,
+      "screenshot_evidence_id": null
+    }
+  },
+  "all_fields_by_concept": {
+    "full_name": [
+      "candidate_name"
+    ],
+    "father_name": [
+      "father_name"
+    ],
+    "mother_name": [
+      "mother_name"
+    ],
+    "dob_day": [
+      "dob_day"
+    ],
+    "dob_month": [
+      "dob_month"
+    ],
+    "dob_year": [
+      "dob_year"
+    ],
+    "gender": [
+      "gender"
+    ],
+    "present_address_line_1": [
+      "present_address_premises"
+    ],
+    "present_address_line_2": [
+      "present_address_locality"
+    ],
+    "present_state": [
+      "present_address_state"
+    ],
+    "present_district": [
+      "present_address_district"
+    ],
+    "present_pincode": [
+      "present_address_pincode"
+    ],
+    "email": [
+      "email"
+    ],
+    "mobile": [
+      "mobile"
+    ],
+    "account_password": [
+      "password"
+    ],
+    "verify_password": [
+      "verify_password"
+    ],
+    "category": [
+      "category"
+    ],
+    "has_category_cert": [
+      "has_category_cert"
+    ],
+    "caste_certificate_number": [
+      "category_cert_no"
+    ],
+    "caste_cert_issue_date": [
+      "category_cert_date"
+    ],
+    "caste_cert_authority": [
+      "category_cert_authority"
+    ],
+    "is_diabetic": [
+      "is_diabetic"
+    ],
+    "family_income": [
+      "annual_family_income"
+    ],
+    "apply_for_paper1": [
+      "apply_for_paper1"
+    ],
+    "apply_for_paper2a": [
+      "apply_for_paper2a"
+    ],
+    "apply_for_paper2b": [
+      "apply_for_paper2b"
+    ],
+    "exam_session": [
+      "exam_session"
+    ],
+    "question_paper_medium": [
+      "question_paper_medium"
+    ],
+    "exam_city_choice_1": [
+      "exam_city_choice_1"
+    ],
+    "exam_city_choice_2": [
+      "exam_city_choice_2"
+    ],
+    "exam_city_choice_3": [
+      "exam_city_choice_3"
+    ],
+    "exam_city_choice_4": [
+      "exam_city_choice_4"
+    ],
+    "father_occupation": [
+      "father_occupation"
+    ],
+    "father_qualification": [
+      "father_qualification"
+    ],
+    "mother_occupation": [
+      "mother_occupation"
+    ],
+    "mother_qualification": [
+      "mother_qualification"
+    ],
+    "country_code": [
+      "emergency_country_code"
+    ],
+    "alternate_mobile": [
+      "emergency_mobile"
+    ],
+    "alternate_email": [
+      "emergency_email"
+    ],
+    "photo_upload": [
+      "upload_photo"
+    ],
+    "signature_upload": [
+      "upload_signature"
+    ],
+    "matric_cert_upload": [
+      "upload_matric_cert"
+    ]
+  }
+}

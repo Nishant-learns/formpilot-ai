@@ -1,0 +1,9 @@
+{
+  "appId": "com.formpilot.app",
+  "appName": "FormPilot",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}

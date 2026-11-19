@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "name": "gov-portal-simulator",
+  "cleanUrls": true,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

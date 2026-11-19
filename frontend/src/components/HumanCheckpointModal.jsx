@@ -1,0 +1,1854 @@
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  AlertOctagon,
+  AlertTriangle,
+  ArrowRight,
+  BellRing,
+  Camera,
+  Check,
+  CheckCircle2,
+  Copy,
+  Download,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  FileCheck2,
+  FileText,
+  FileUp,
+  HelpCircle,
+  Image as ImageIcon,
+  Key,
+  Loader2,
+  Lock,
+  MousePointer2,
+  RefreshCw,
+  ShieldAlert,
+  Smartphone,
+  Sparkles,
+  Upload,
+  X,
+} from 'lucide-react';
+import { SecurityShieldIcon, BiometricFingerprintIcon, BiometricFaceScanIcon } from './CustomIcons';
+
+const LIVE_GATES = new Set(['LIVE_HANDOFF', 'LIVE_PHOTO', 'FILE_UPLOAD', 'UNKNOWN_FIELD']);
+
+export default function HumanCheckpointModal(props) {
+  if (!props.activeGate || props.hidden) return null;
+  const key = [
+    props.activeGate.gate_type,
+    props.activeGate.field_key || '',
+    props.activeGate.section_number || '',
+  ].join(':');
+  return <CheckpointContent key={key} {...props} />;
+}
+
+const GATE_REASON_LABELS = {
+  entry_path_choice: 'You need to choose how to start',
+  next_step_choice: 'You need to choose the next step',
+  account_conflict: 'The portal says this account already exists',
+  login_method_choice: 'You need to choose how to sign in',
+  account_identifier_choice: 'You need to choose which detail identifies the account',
+  missing_fact: 'One detail is still missing',
+  unknown_field: 'A field needs your decision',
+  incomplete_fill: 'Some fields were not kept by the portal',
+  section_review: 'This section is ready for your review',
+  captcha_human_only: 'A security check is yours to complete',
+  otp_human_only: 'The one-time code is yours to enter',
+  live_photo: 'A live photo is yours to provide',
+  file_upload: 'A document is yours to attach',
+  human_handoff: 'This step needs you in the browser',
+  pre_payment_review: 'Review the form before payment or submission',
+  error_diagnosis: 'The portal needs your attention',
+  unknown: 'FormPilot stopped for your review',
+};
+
+function gateReasonLabel(reason) {
+  return GATE_REASON_LABELS[reason] || 'FormPilot stopped for your review';
+}
+
+function statusLabel(status) {
+  if (status === 'MATCH') return 'Matches';
+  if (status === 'EMPTY') return 'Empty on form';
+  if (status === 'MISMATCH') return 'Check this';
+  return status || 'Checked';
+}
+
+function statusClass(status) {
+  if (status === 'MATCH') return 'text-emerald-400';
+  if (status === 'EMPTY' || status === 'MISMATCH') return 'text-amber-400';
+  return 'text-slate-300';
+}
+
+function entryOptionDescription(option) {
+  if (option.description) return option.description;
+  const mode = option.mode || option.type;
+  if (mode === 'register') return 'Create a new account and start a fresh application';
+  if (mode === 'login') return 'Sign in to an existing account';
+  if (mode === 'resume') return 'Resume an application you already started';
+  if (mode === 'manual' || option.source === 'current_page') {
+    return 'Continue on the page that is already open';
+  }
+  return 'Use this entry path';
+}
+
+function GateIcon({ type }) {
+  if (type === 'GATEWAY_DECISION') return <Key className="w-5 h-5" />;
+  if (type === 'LOGIN_METHOD' || type === 'ACCOUNT_IDENTIFIER') return <Key className="w-5 h-5" />;
+  if (type === 'PASSWORD_CREATION') return <Key className="w-5 h-5 text-indigo-400" />;
+  if (type === 'FILL_INCOMPLETE') return <AlertTriangle className="w-5 h-5 text-amber-400" />;
+  if (type === 'MISSING_FIELD' || type === 'UNKNOWN_FIELD') return <HelpCircle className="w-5 h-5" />;
+  if (type === 'CAPTCHA_SOLVE' || type === 'LIVE_HANDOFF') return <Lock className="w-5 h-5" />;
+  if (type === 'OTP_RELAY') return <Smartphone className="w-5 h-5" />;
+  if (type === 'SECTION_APPROVAL') return <FileCheck2 className="w-5 h-5" />;
+  if (type === 'LIVE_PHOTO') return <Camera className="w-5 h-5" />;
+  if (type === 'FILE_UPLOAD') return <FileUp className="w-5 h-5" />;
+  if (type === 'PRE_PAYMENT_SAFETY_LOCK') return <AlertOctagon className="w-6 h-6 text-red-400" />;
+  if (type === 'ERROR_DIAGNOSIS') return <ShieldAlert className="w-5 h-5 text-red-400" />;
+  return <ShieldAlert className="w-5 h-5" />;
+}
+
+function CheckpointContent({ activeGate, onSubmitResponse, onClose, onDismissGate, liveSession }) {
+  const [inputVal, setInputVal] = useState('');
+  const [captchaVal, setCaptchaVal] = useState('');
+  const [otpVal, setOtpVal] = useState('');
+  const [editingSection, setEditingSection] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [otpBoxes, setOtpBoxes] = useState(['', '', '', '', '', '']);
+  const [captchaZoomed, setCaptchaZoomed] = useState(false);
+  const otpInputRefs = useRef([]);
+
+  // Password creation state
+  const [passwordMode, setPasswordMode] = useState('generate');
+  const [customPassword, setCustomPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [copiedPass, setCopiedPass] = useState(false);
+  const [currentSuggestedPass, setCurrentSuggestedPass] = useState(activeGate?.suggested_password || '');
+  const [generatingPass, setGeneratingPass] = useState(false);
+
+  useEffect(() => {
+    if (activeGate?.suggested_password) {
+      setCurrentSuggestedPass(activeGate.suggested_password);
+    }
+  }, [activeGate?.suggested_password]);
+
+  const handleRegeneratePassword = async () => {
+    try {
+      setGeneratingPass(true);
+      const res = await fetch('/api/credentials/generate-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ length: 12 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.password) setCurrentSuggestedPass(data.password);
+      }
+    } catch (err) {
+      console.error('Error generating password:', err);
+    } finally {
+      setGeneratingPass(false);
+    }
+  };
+
+  const handlePasswordCreationSubmit = (event) => {
+    if (event) event.preventDefault();
+    const finalPassword = passwordMode === 'generate' ? currentSuggestedPass : customPassword.trim();
+    if (!finalPassword) return;
+    onSubmitResponse({
+      action: 'PASSWORD_CREATION_SUBMIT',
+      password: finalPassword,
+      value: finalPassword,
+      use_generated: passwordMode === 'generate',
+    });
+  };
+
+  useEffect(() => {
+    if (otpVal) {
+      const chars = otpVal.slice(0, 6).split('');
+      const next = Array.from({ length: 6 }, (_, i) => chars[i] || '');
+      setOtpBoxes(next);
+    }
+  }, [otpVal]);
+
+  const handleDigitChange = (index, value) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const nextBoxes = [...otpBoxes];
+    nextBoxes[index] = digit;
+    setOtpBoxes(nextBoxes);
+    const combined = nextBoxes.join('');
+    setOtpVal(combined);
+
+    if (digit && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleDigitKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otpBoxes[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleDigitPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const nextBoxes = Array.from({ length: 6 }, (_, i) => pasted[i] || '');
+    setOtpBoxes(nextBoxes);
+    setOtpVal(pasted);
+    const nextIndex = Math.min(pasted.length, 5);
+    otpInputRefs.current[nextIndex]?.focus();
+  };
+
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const previewRef = useRef('');
+  const fileInputRef = useRef(null);
+
+  const hasLive = Boolean(activeGate.live_session || liveSession);
+  const docked = hasLive && activeGate.gate_type !== 'GATEWAY_DECISION';
+  const isUploadGate = activeGate.gate_type === 'LIVE_PHOTO' || activeGate.gate_type === 'FILE_UPLOAD';
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraActive(false);
+  };
+
+  useEffect(() => {
+    if (!cameraActive || !streamRef.current || !videoRef.current) return;
+    videoRef.current.srcObject = streamRef.current;
+    videoRef.current.play().catch(() => {});
+  }, [cameraActive]);
+
+  useEffect(() => () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+    }
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+  }, []);
+
+  const setPreviewFile = (file) => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    const url = URL.createObjectURL(file);
+    previewRef.current = url;
+    setPhotoFile(file);
+    setPhotoPreview(url);
+    setUploadError('');
+  };
+
+  const chooseFile = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('The file must be 5 MB or smaller.');
+      return;
+    }
+    setPreviewFile(file);
+  };
+
+  const startCamera = async () => {
+    setCameraError('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('This browser cannot open the camera. Choose a photo file instead.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setCameraActive(true);
+    } catch (err) {
+      setCameraError(
+        'The camera was not available. Allow camera access and try again, or choose a recent photo.'
+      );
+    }
+  };
+
+  const capturePhoto = async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setCameraError('The camera is still starting. Wait a moment and try again.');
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+    if (!blob) {
+      setCameraError('The photo could not be captured. Try again or choose a file.');
+      return;
+    }
+    const file = new File([blob], `live-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+    setPreviewFile(file);
+    stopCamera();
+  };
+
+  const handleGatewayChoice = (option) => {
+    onSubmitResponse({
+      action: 'GATEWAY_CHOICE',
+      id: option.id,
+      element_id: option.element_id,
+      text: option.text,
+      type: option.type,
+      mode: option.mode || option.type,
+    });
+  };
+
+  const handleLoginMethodChoice = (option) => {
+    onSubmitResponse({
+      action: 'LOGIN_METHOD_CHOICE',
+      method: option.method,
+      value: option.value,
+      text: option.text,
+    });
+  };
+
+  const handleIdentifierChoice = (option) => {
+    onSubmitResponse({
+      action: 'ACCOUNT_IDENTIFIER_CHOICE',
+      key: option.key,
+      value: option.key,
+      text: option.text,
+    });
+  };
+
+  const handleMissingFieldSubmit = (event) => {
+    event.preventDefault();
+    if (!inputVal.trim()) return;
+    onSubmitResponse({
+      action: 'MISSING_FIELD_SUBMIT',
+      key: activeGate.field_key,
+      value: inputVal.trim(),
+    });
+    setInputVal('');
+  };
+
+  const handleUnknownFieldSubmit = (event) => {
+    event.preventDefault();
+    if (!inputVal.trim()) return;
+    onSubmitResponse({
+      action: 'UNKNOWN_FIELD_SUBMIT',
+      key: activeGate.field_key,
+      value: inputVal.trim(),
+    });
+    setInputVal('');
+  };
+
+  const handleCaptchaSubmit = (event) => {
+    event.preventDefault();
+    if (!captchaVal.trim()) return;
+    onSubmitResponse({ action: 'CAPTCHA_SUBMIT', code: captchaVal.trim() });
+    setCaptchaVal('');
+  };
+
+  const handleOtpSubmit = (event) => {
+    event.preventDefault();
+    if (!otpVal.trim()) return;
+    onSubmitResponse({
+      action: 'OTP_SUBMIT',
+      otp: otpVal.trim(),
+      code: otpVal.trim(),
+    });
+    setOtpVal('');
+  };
+
+  const handleSectionApproval = (approved) => {
+    onSubmitResponse({ action: 'SECTION_APPROVAL', approved });
+  };
+
+  const submitUpload = async () => {
+    if (!photoFile || uploading) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const form = new FormData();
+      form.append('field_key', activeGate.field_key || 'photo_upload');
+      form.append('file', photoFile, photoFile.name || 'upload.jpg');
+      const response = await fetch('/api/agent/upload', { method: 'POST', body: form });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.detail || 'The portal did not accept the file.');
+      }
+      onSubmitResponse({
+        action: 'UPLOAD_COMPLETE',
+        field_key: activeGate.field_key,
+      });
+    } catch (err) {
+      setUploadError(err.message || 'The upload failed. Try again or attach the file in the live browser.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const dismissGate = () => {
+    if (onDismissGate) {
+      onDismissGate();
+      return;
+    }
+    if (onClose) onClose();
+    fetch('/api/agent/dismiss-gate', { method: 'POST' }).catch(() => {});
+  };
+
+  const hidePanel = () => {
+    if (onClose) onClose();
+  };
+
+  const demoOtp = activeGate.demo_otp || (activeGate.description?.match(/\b(\d{6})\b/)?.[1] ?? '');
+  const instructions = Array.isArray(activeGate.instructions) ? activeGate.instructions : [];
+
+  return (
+    <div
+      className={
+        docked
+          ? 'safe-bottom fixed inset-x-0 bottom-0 z-50 p-2.5 sm:inset-auto sm:right-4 sm:bottom-4 sm:w-[460px] sm:p-0'
+          : 'fixed inset-0 z-50 flex items-end justify-center bg-[#0d1210]/80 p-0 backdrop-blur-xl animate-fadeIn sm:items-center sm:p-4'
+      }
+    >
+      <div
+        className={`glass-panel-elevated specular-top w-full shadow-2xl overflow-hidden ${
+          docked
+            ? 'rounded-3xl border-indigo-500/40 max-h-[min(84vh,84dvh)] shadow-indigo-950/40 glow-indigo'
+            : activeGate.gate_type === 'PRE_PAYMENT_SAFETY_LOCK'
+              ? 'rounded-t-3xl border-amber-500/50 max-h-[92dvh] max-w-2xl shadow-amber-500/10 glow-amber sm:rounded-3xl'
+              : 'rounded-t-3xl border-white/[0.12] max-h-[92dvh] max-w-2xl shadow-black/80 sm:rounded-3xl'
+        }`}
+      >
+        {/* Mobile bottom sheet drag handle */}
+        <div className="flex justify-center pt-2 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-white/25" />
+        </div>
+
+        {/* Header */}
+        <div
+          className={`px-5 py-3.5 border-b flex items-center justify-between ${
+            activeGate.gate_type === 'PRE_PAYMENT_SAFETY_LOCK'
+              ? 'bg-amber-500/10 border-amber-500/30'
+              : docked
+                ? 'bg-indigo-500/10 border-indigo-500/25'
+                : 'bg-white/[0.03] border-white/[0.08]'
+          }`}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+              activeGate.gate_type === 'PRE_PAYMENT_SAFETY_LOCK'
+                ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                : 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300'
+            }`}>
+              <GateIcon type={activeGate.gate_type} />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-extrabold text-white truncate">{activeGate.title}</h3>
+              <p className="text-[11px] text-slate-400 truncate">
+                {activeGate.hindi_title || 'Please review this checkpoint'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-white/[0.05] text-slate-300 border border-white/[0.08] uppercase tracking-wider">
+              {hasLive ? 'Interactive session' : 'Verification step'}
+            </span>
+            <button
+              type="button"
+              onClick={hidePanel}
+              className="p-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors"
+              title={hasLive ? 'Hide this panel. The live browser stays available.' : 'Hide this review'}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-5 max-h-[72vh] overflow-y-auto">
+          {hasLive && activeGate.gate_type !== 'PRE_PAYMENT_SAFETY_LOCK' && (
+            <div className="mb-4 flex items-start gap-2 rounded-xl bg-sky-500/10 border border-sky-500/30 px-3 py-2 text-[11px] text-sky-200">
+              <MousePointer2 className="w-4 h-4 text-sky-300 shrink-0 mt-0.5" />
+              <span>
+                This panel is docked so you can use the live browser at the same time. Click and
+                type directly on the portal; FormPilot stays paused until you continue here.
+              </span>
+            </div>
+          )}
+
+          {activeGate.reason && (
+            <div className="mb-4 rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-[11px] text-slate-300">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                  Why this stopped
+                </span>
+                <span className="text-sky-300">{gateReasonLabel(activeGate.reason)}</span>
+              </div>
+              {activeGate.recommended?.label && (
+                <div className="mt-1 text-emerald-300">
+                  Suggested first step: {activeGate.recommended.label}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Gateway choice */}
+          {activeGate.gate_type === 'GATEWAY_DECISION' && (
+            <div>
+              <p className="text-sm text-slate-300 mb-4 leading-relaxed">{activeGate.description}</p>
+              {(activeGate.account_memory?.accounts > 0 || activeGate.login_inspection?.login_methods?.length > 0) && (
+                <div className="mb-4 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-[11px] leading-relaxed text-sky-200">
+                  <div className="font-bold text-sky-100">What I remember about this portal</div>
+                  {activeGate.account_memory?.accounts > 0 ? (
+                    <div className="mt-1">
+                      {activeGate.account_memory.account_exists === 'yes'
+                        ? 'You have used this portal before.'
+                        : activeGate.account_memory.account_exists === 'no'
+                          ? 'You told me this is your first time here.'
+                          : 'I do not know yet whether you have an account here.'}
+                      {activeGate.account_memory.registration_status === 'in_progress' && (
+                        <span> An application is in progress.</span>
+                      )}
+                      {activeGate.account_memory.last_known_step && (
+                        <span> Last known step: {activeGate.account_memory.last_known_step.replaceAll('_', ' ')}.</span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-1">No earlier visit is recorded for this portal.</div>
+                  )}
+                  {activeGate.login_inspection?.login_methods?.length > 0 && (
+                    <div className="mt-1 text-sky-300/90">
+                      Visible sign-in options:{' '}
+                      {activeGate.login_inspection.login_methods
+                        .map((method) => method.replaceAll('_', ' '))
+                        .join(', ')}
+                      . <span className="text-sky-300/70">Read-only check; nothing was submitted.</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeGate.account_memory?.account_exists === 'unknown' && !activeGate.account_answered && (
+                <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                  <div className="text-[11px] font-bold text-amber-200">
+                    Have you registered on this portal before?
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {[
+                      { value: 'yes', label: 'Yes, I have an account' },
+                      { value: 'no', label: 'No, this is my first time' },
+                      { value: 'unknown', label: "I'm not sure" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() =>
+                          onSubmitResponse({ action: 'ACCOUNT_STATUS', account_exists: option.value })
+                        }
+                        className="rounded-lg border border-amber-500/40 bg-slate-950/70 px-3 py-1.5 text-[11px] font-semibold text-amber-200 transition-colors hover:bg-amber-500/20"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {activeGate.options?.map((option, index) => (
+                  <button
+                    key={option.element_id || option.id || index}
+                    type="button"
+                    onClick={() => handleGatewayChoice(option)}
+                    className="p-4 rounded-2xl bg-slate-950/80 hover:bg-slate-800/80 border-2 border-slate-700 hover:border-amber-500/80 text-left transition-all group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider">
+                          Option {index + 1}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-1 group-hover:text-amber-300">
+                        {option.text}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        {entryOptionDescription(option)}
+                      </p>
+                    </div>
+                    <span className="mt-3 inline-block text-[10px] font-semibold text-slate-300 bg-slate-800 px-2 py-1 rounded-md border border-slate-700">
+                      Choose this option
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-slate-500">
+                FormPilot will open only the path you choose. Dismissing this panel is not a
+                choice, and no path is selected automatically.
+              </p>
+            </div>
+          )}
+
+          {/* Existing account conflict */}
+          {activeGate.gate_type === 'ACCOUNT_CONFLICT' && (
+            <div className="space-y-4">
+              <p className="text-sm text-slate-300 leading-relaxed">{activeGate.description}</p>
+              {activeGate.evidence && (
+                <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-[11px] leading-relaxed text-rose-200">
+                  <div className="font-bold text-rose-100">What the portal showed</div>
+                  <div className="mt-1 italic">“{activeGate.evidence}”</div>
+                  <div className="mt-1 text-rose-300/70">
+                    Read-only: nothing was submitted, no OTP requested, no password reset.
+                  </div>
+                </div>
+              )}
+              {activeGate.login_inspection?.login_methods?.length > 0 && (
+                <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-[11px] leading-relaxed text-sky-200">
+                  <div className="font-bold text-sky-100">Sign-in options visible on this page</div>
+                  <div className="mt-1">
+                    {activeGate.login_inspection.login_methods
+                      .map((method) => method.replaceAll('_', ' '))
+                      .join(', ')}
+                    {activeGate.login_inspection.recovery_paths?.length > 0 && (
+                      <span>
+                        {' '}
+                        · Recovery: {activeGate.login_inspection.recovery_paths.join(', ')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-2">
+                {activeGate.options?.map((option, index) => (
+                  <button
+                    key={option.choice || index}
+                    type="button"
+                    onClick={() =>
+                      onSubmitResponse({ action: 'ACCOUNT_CONFLICT', choice: option.choice })
+                    }
+                    className="p-3.5 rounded-2xl glass-panel hover:border-indigo-500/50 hover:bg-white/[0.04] text-left transition-all flex items-center justify-between gap-3 group shadow-sm"
+                  >
+                    <div>
+                      <div className="text-sm font-bold text-slate-100 group-hover:text-indigo-200">{option.text}</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">{option.description}</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all shrink-0" />
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Nothing is selected automatically. FormPilot will not fill the registration form
+                over an existing account.
+              </p>
+            </div>
+          )}
+
+          {/* Login method */}
+          {activeGate.gate_type === 'LOGIN_METHOD' && (
+            <div className="space-y-4">
+              <p className="text-sm text-slate-300 leading-relaxed">{activeGate.description}</p>
+              <div className="grid grid-cols-1 gap-2">
+                {activeGate.options?.map((option, index) => (
+                  <button
+                    key={option.value || option.method || index}
+                    type="button"
+                    onClick={() => handleLoginMethodChoice(option)}
+                    className="p-3.5 rounded-2xl glass-panel hover:border-indigo-500/50 hover:bg-white/[0.04] text-left transition-all flex items-center justify-between gap-3 group shadow-sm"
+                  >
+                    <div>
+                      <div className="text-sm font-bold text-slate-100 group-hover:text-indigo-200">
+                        {option.label || option.text}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        {option.description || 'Use this method to sign in'}
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all shrink-0" />
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-500">
+                The form supports more than one sign-in method. Choose the one that belongs to
+                your account; FormPilot will not pick one for you.
+              </p>
+            </div>
+          )}
+
+          {/* Account identifier */}
+          {activeGate.gate_type === 'ACCOUNT_IDENTIFIER' && (
+            <div className="space-y-4">
+              <p className="text-sm text-slate-300 leading-relaxed">{activeGate.description}</p>
+              <div className="grid grid-cols-1 gap-2">
+                {activeGate.options?.map((option, index) => (
+                  <button
+                    key={option.key || index}
+                    type="button"
+                    onClick={() => handleIdentifierChoice(option)}
+                    className="p-3.5 rounded-2xl glass-panel hover:border-indigo-500/50 hover:bg-white/[0.04] text-left transition-all flex items-center justify-between gap-3 group shadow-sm"
+                  >
+                    <div>
+                      <div className="text-sm font-bold text-slate-100 group-hover:text-indigo-200">
+                        {option.text || option.label || option.key}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        Use this saved detail to identify the account
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all shrink-0" />
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-500">
+                FormPilot will not fill every identifier the form shows. Choose the one your
+                account uses.
+              </p>
+            </div>
+          )}
+
+          {/* Verified fill check */}
+          {activeGate.gate_type === 'FILL_INCOMPLETE' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/40 text-xs text-amber-100 leading-relaxed">
+                <div className="flex items-center gap-2 font-bold text-amber-300 uppercase tracking-wider text-[10px] mb-1">
+                  <AlertTriangle className="w-4 h-4" />
+                  This form is not fully filled
+                </div>
+                {activeGate.description}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center">
+                  <div className="text-lg font-bold text-emerald-300">
+                    {activeGate.fill_summary?.verified || 0}
+                  </div>
+                  <div className="text-[9px] uppercase tracking-wider text-emerald-400/80">
+                    Verified
+                  </div>
+                </div>
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-center">
+                  <div className="text-lg font-bold text-red-300">
+                    {activeGate.fill_summary?.failed || 0}
+                  </div>
+                  <div className="text-[9px] uppercase tracking-wider text-red-400/80">Failed</div>
+                </div>
+                <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-center">
+                  <div className="text-lg font-bold text-slate-300">
+                    {activeGate.fill_summary?.skipped || 0}
+                  </div>
+                  <div className="text-[9px] uppercase tracking-wider text-slate-500">Skipped</div>
+                </div>
+              </div>
+
+              {activeGate.fill_failures?.length > 0 && (
+                <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-3">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-400">
+                        <th className="pb-2">Field</th>
+                        <th className="pb-2">Status</th>
+                        <th className="pb-2 text-right">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {activeGate.fill_failures.map((failure, index) => (
+                        <tr key={index}>
+                          <td className="py-1.5 text-slate-300">{failure.field_label}</td>
+                          <td className={`py-1.5 font-bold ${failure.status === 'FAILED' ? 'text-red-400' : 'text-amber-400'}`}>
+                            {failure.status}
+                          </td>
+                          <td className="py-1.5 text-right font-sans text-[10px] text-slate-500">
+                            {failure.reason}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => onSubmitResponse({ action: 'CONTINUE' })}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                >
+                  Continue after reviewing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSubmitResponse({ action: 'FILL_RECHECK' })}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-sm flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Recheck and fill again</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Password creation */}
+          {activeGate.gate_type === 'PASSWORD_CREATION' && (
+            <form onSubmit={handlePasswordCreationSubmit} className="space-y-4">
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                      <Key className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                        {activeGate.field_label || 'Create Account Password'}
+                      </h4>
+                      {activeGate.domain && (
+                        <span className="text-[10px] text-slate-400 font-mono">{activeGate.domain}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
+                    Saved to Vault
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {activeGate.description || 'This portal asks to create an account password. Use our strong auto-generated password or type your own. It will be permanently stored in your Saved Passwords vault.'}
+                </p>
+
+                {/* Mode Selector */}
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-900 border border-white/[0.06]">
+                  <button
+                    type="button"
+                    onClick={() => setPasswordMode('generate')}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      passwordMode === 'generate'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Auto-Generate</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPasswordMode('custom')}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      passwordMode === 'custom'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Enter My Own</span>
+                  </button>
+                </div>
+
+                {passwordMode === 'generate' ? (
+                  <div className="space-y-3 pt-1">
+                    <div className="p-3.5 rounded-xl bg-slate-900 border border-indigo-500/30 flex items-center justify-between">
+                      <span className="font-mono text-sm sm:text-base font-bold text-indigo-300 tracking-wider select-all">
+                        {currentSuggestedPass || '••••••••••••'}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (currentSuggestedPass) {
+                              navigator.clipboard.writeText(currentSuggestedPass);
+                              setCopiedPass(true);
+                              setTimeout(() => setCopiedPass(false), 2000);
+                            }
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-xs text-slate-300 hover:text-white flex items-center gap-1 transition-colors"
+                          title="Copy password"
+                        >
+                          {copiedPass ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedPass ? 'Copied' : 'Copy'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRegeneratePassword}
+                          disabled={generatingPass}
+                          className="p-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 hover:text-white transition-colors"
+                          title="Generate another"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${generatingPass ? 'animate-spin' : ''}`} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Government Portal Rules Checklist */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-slate-300 pt-1">
+                      <div className="flex items-center gap-1.5 text-emerald-400">
+                        <Check className="w-3 h-3 shrink-0" />
+                        <span>8 to 13 characters long</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-emerald-400">
+                        <Check className="w-3 h-3 shrink-0" />
+                        <span>Upper & lowercase letters (A-Z, a-z)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-emerald-400">
+                        <Check className="w-3 h-3 shrink-0" />
+                        <span>At least 1 numerical digit (0-9)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-emerald-400">
+                        <Check className="w-3 h-3 shrink-0" />
+                        <span>At least 1 special char (!@#$%^&*)</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-1">
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={customPassword}
+                        onChange={(e) => setCustomPassword(e.target.value)}
+                        placeholder="Enter your chosen password"
+                        autoFocus
+                        className="w-full px-4 py-3 pr-10 rounded-xl bg-slate-900 border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white font-mono text-sm outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    {/* Live Rule Indicators */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] pt-1">
+                      <div className={`flex items-center gap-1.5 ${customPassword.length >= 8 && customPassword.length <= 13 ? 'text-emerald-400 font-semibold' : 'text-slate-500'}`}>
+                        <Check className="w-3 h-3 shrink-0" />
+                        <span>8 to 13 characters ({customPassword.length})</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${/[A-Z]/.test(customPassword) && /[a-z]/.test(customPassword) ? 'text-emerald-400 font-semibold' : 'text-slate-500'}`}>
+                        <Check className="w-3 h-3 shrink-0" />
+                        <span>Uppercase & lowercase letters</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${/[0-9]/.test(customPassword) ? 'text-emerald-400 font-semibold' : 'text-slate-500'}`}>
+                        <Check className="w-3 h-3 shrink-0" />
+                        <span>At least 1 numeric digit (0-9)</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${/[!@#$%^&*]/.test(customPassword) ? 'text-emerald-400 font-semibold' : 'text-slate-500'}`}>
+                        <Check className="w-3 h-3 shrink-0" />
+                        <span>At least 1 special char (!@#$%^&*)</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => onSubmitResponse({ action: 'SKIP' })}
+                  className="px-4 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                >
+                  Skip / Set in Live Browser
+                </button>
+                <button
+                  type="submit"
+                  disabled={passwordMode === 'custom' && !customPassword.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-2 shadow-sm shadow-indigo-500/30 transition-all"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Save Password & Fill Form</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Missing field */}
+          {activeGate.gate_type === 'MISSING_FIELD' && (
+            <form onSubmit={handleMissingFieldSubmit} className="space-y-4">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {activeGate.required
+                    ? 'This form asks for a detail that is not saved yet. Enter it once and FormPilot will remember it for future applications.'
+                    : 'This detail is optional. Leave it blank if it does not apply to you — FormPilot will not invent a value.'}
+                </p>
+                <div className="mt-3">
+                  <label className="text-[10px] font-bold text-amber-300 block mb-1 uppercase tracking-wider">
+                    {activeGate.field_label}
+                    {activeGate.required
+                      ? <span className="text-red-400 ml-1">required</span>
+                      : <span className="text-slate-500 ml-1 normal-case tracking-normal">optional</span>}
+                  </label>
+                  <input
+                    type={activeGate.input_type === 'date' ? 'date' : activeGate.input_type || 'text'}
+                    value={inputVal}
+                    onChange={(event) => setInputVal(event.target.value)}
+                    autoFocus
+                    placeholder={activeGate.required ? `Enter ${activeGate.field_label}` : 'Leave blank if not applicable'}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-white font-medium text-sm outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <div className="flex items-center gap-2">
+                  {activeGate.can_skip && (
+                    <button
+                      type="button"
+                      onClick={() => onSubmitResponse({ action: 'SKIP' })}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                    >
+                      Skip — not applicable to me
+                    </button>
+                  )}
+                  {hasLive && (
+                    <button
+                      type="button"
+                      onClick={() => onSubmitResponse({ action: 'CONTINUE' })}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                    >
+                      I filled it in the browser
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={!inputVal.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-sm flex items-center gap-2 shadow-lg disabled:opacity-50"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Save and fill this field</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Unknown field: never guess */}
+          {activeGate.gate_type === 'UNKNOWN_FIELD' && (
+            <form onSubmit={handleUnknownFieldSubmit} className="space-y-4">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {activeGate.description}
+                </p>
+                <div className="text-[11px] font-mono text-slate-500">
+                  {activeGate.why || 'No high-confidence match in the field registry.'}
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-amber-300 block mb-1 uppercase tracking-wider">
+                    {activeGate.field_label}
+                    {activeGate.required && <span className="text-red-400 ml-1">required</span>}
+                  </label>
+                  {activeGate.options?.length ? (
+                    <select
+                      value={inputVal}
+                      onChange={(event) => setInputVal(event.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-500 text-white font-medium text-sm outline-none"
+                    >
+                      <option value="">Choose an option</option>
+                      {activeGate.options.map((option, index) => (
+                        <option key={index} value={option.value || option.text}>
+                          {option.text || option.value}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={activeGate.input_type === 'date' ? 'date' : activeGate.input_type || 'text'}
+                      value={inputVal}
+                      onChange={(event) => setInputVal(event.target.value)}
+                      autoFocus
+                      placeholder={`Enter ${activeGate.field_label}`}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-white font-medium text-sm outline-none"
+                    />
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  The value is stored as a custom profile field for this account. It is not added
+                  to shared recipes.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  {activeGate.can_skip && (
+                    <button
+                      type="button"
+                      onClick={() => onSubmitResponse({ action: 'SKIP' })}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                    >
+                      Skip this field
+                    </button>
+                  )}
+                  {hasLive && (
+                    <button
+                      type="button"
+                      onClick={() => onSubmitResponse({ action: 'CONTINUE' })}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                    >
+                      I filled it in the browser
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={!inputVal.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-sm flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Use this value</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Text CAPTCHA */}
+          {activeGate.gate_type === 'CAPTCHA_SOLVE' && (
+            <form onSubmit={handleCaptchaSubmit} className="space-y-4">
+              <p className="text-xs text-slate-300">{activeGate.description}</p>
+              <div className="p-4 rounded-2xl bg-slate-950/90 border border-white/[0.1] flex flex-col md:flex-row items-center gap-4 justify-center shadow-inner">
+                {activeGate.captcha_image ? (
+                  <div className="relative group p-2 rounded-xl bg-slate-900 border border-slate-700/80 shadow-inner flex items-center justify-center">
+                    <img
+                      src={activeGate.captcha_image}
+                      alt="Security check characters"
+                      className={`object-contain rounded transition-all duration-200 ${
+                        captchaZoomed ? 'max-h-36 scale-125 my-2' : 'max-h-20'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCaptchaZoomed(!captchaZoomed)}
+                      className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-slate-950/80 hover:bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-mono font-bold"
+                      title={captchaZoomed ? 'Zoom out' : 'Zoom in'}
+                    >
+                      {captchaZoomed ? '1x' : '2x'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-500">
+                    The security check is shown in the live portal view.
+                  </div>
+                )}
+                <div className="flex-1 w-full max-w-xs">
+                  <input
+                    type="text"
+                    value={captchaVal}
+                    onChange={(event) => setCaptchaVal(event.target.value)}
+                    autoFocus
+                    placeholder="Enter characters"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border-2 border-amber-500/50 focus:border-amber-400 text-center text-xl font-mono font-black tracking-widest text-amber-300 outline-none uppercase shadow-lg shadow-amber-950/20"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                {hasLive && (
+                  <button
+                    type="button"
+                    onClick={() => onSubmitResponse({ action: 'HANDOFF_COMPLETE' })}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700"
+                  >
+                    I solved it in the live browser
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={!captchaVal.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm flex items-center gap-2 disabled:opacity-50 transition-all shadow-md shadow-emerald-500/20"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Submit and continue</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Interactive human handoff: CAPTCHA / slider / grid / puzzle */}
+          {activeGate.gate_type === 'LIVE_HANDOFF' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-slate-950 border border-amber-500/30">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 shrink-0">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-200 font-semibold">
+                      A human must complete this security check.
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      {activeGate.description}
+                    </p>
+                  </div>
+                </div>
+                {activeGate.detected_types?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {activeGate.detected_types.map((type) => (
+                      <span
+                        key={type}
+                        className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700 uppercase"
+                      >
+                        {type}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {activeGate.captcha_prompt && (
+                  <p className="mt-3 text-[11px] text-slate-500 font-mono line-clamp-2">
+                    {activeGate.captcha_prompt}
+                  </p>
+                )}
+              </div>
+
+              {activeGate.idp_mode && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${activeGate.idp_mode === 'signin' ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse`} />
+                    <span className="font-semibold text-slate-200">
+                      {activeGate.idp_mode === 'signin' ? 'DigiLocker: Sign In (Existing Account)' : 'DigiLocker: Sign Up (New Registration)'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    {activeGate.provider_host || 'meripehchaan.gov.in'}
+                  </span>
+                </div>
+              )}
+
+              {activeGate.options && activeGate.options.filter(o => o.type !== 'CONTINUE').length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Choose Action
+                  </label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {activeGate.options
+                      .filter(o => o.type !== 'CONTINUE')
+                      .map((opt, i) => (
+                        <button
+                          key={opt.id || i}
+                          type="button"
+                          onClick={() => onSubmitResponse({
+                            action: opt.action || opt.type || opt.id || 'AUTO_CLICK',
+                            button_text: opt.button_text || opt.text,
+                            mode: opt.mode,
+                          })}
+                          className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-bold text-left flex items-center justify-between border transition-all ${
+                            opt.action === 'AUTO_CLICK'
+                              ? 'bg-gradient-to-r from-cyan-950/80 to-blue-950/80 hover:from-cyan-900/90 hover:to-blue-900/90 border-cyan-500/60 text-cyan-200 shadow-sm shadow-cyan-500/20'
+                              : opt.mode === 'signin'
+                              ? 'bg-emerald-950/70 hover:bg-emerald-900/90 border-emerald-600/80 text-emerald-200'
+                              : opt.type === 'GENERATE_OTP'
+                              ? 'bg-amber-950/70 hover:bg-amber-900/90 border-amber-600/80 text-amber-200'
+                              : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            {opt.action === 'AUTO_CLICK' && <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0 animate-pulse" />}
+                            <span>{opt.action === 'AUTO_CLICK' ? `Click "${opt.text}" for me` : opt.text}</span>
+                          </span>
+                          <ArrowRight className="w-4 h-4 shrink-0 opacity-70" />
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {instructions.length > 0 && (
+                <ol className="space-y-2">
+                  {instructions.map((instruction, index) => (
+                    <li key={index} className="flex items-start gap-2 text-xs text-slate-300">
+                      <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        {index + 1}
+                      </span>
+                      <span className="leading-relaxed">{instruction}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+
+              {activeGate.accepts_credential && (
+                <form onSubmit={handleOtpSubmit} className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    {activeGate.credential_label || 'PIN or OTP'}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={otpVal}
+                      onChange={(event) => setOtpVal(event.target.value)}
+                      type="password"
+                      autoComplete="one-time-code"
+                      placeholder="Enter once — never stored"
+                      className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm font-mono focus:outline-none focus:border-emerald-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!otpVal.trim()}
+                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-bold text-sm"
+                    >
+                      Enter
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    FormPilot enters this once on the provider page and never stores it.
+                  </p>
+                </form>
+              )}
+
+              <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-[11px] text-slate-500">
+                Policy: {activeGate.solver_policy === 'human_handoff_only'
+                  ? 'human handoff only — no automatic solving, token injection or evasion.'
+                  : 'human decision required.'}
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={hidePanel}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                >
+                  Back to the live page
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSubmitResponse({ action: 'HANDOFF_COMPLETE' })}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>I completed this step</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* OTP */}
+          {activeGate.gate_type === 'OTP_RELAY' && (
+            <form onSubmit={handleOtpSubmit} className="space-y-4">
+              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 border border-emerald-500/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                      Verification code sent
+                    </span>
+                  </div>
+                  {activeGate.recipient && (
+                    <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                      To: {activeGate.recipient}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-xs text-slate-300">
+                  {activeGate.description || 'Enter the 6-digit code sent to the phone number saved in your details.'}
+                </p>
+
+                {activeGate.ntfy_url && (
+                  <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <BellRing className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-200">Phone alert channel</div>
+                        <div className="text-[11px] font-mono text-emerald-400 truncate">
+                          {activeGate.ntfy_url}
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href={activeGate.ntfy_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1.5 shrink-0"
+                    >
+                      <span>Open</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+
+                <div className="text-[11px] text-slate-400 flex items-center justify-between gap-3">
+                  <span>FormPilot never stores this code.</span>
+                  {demoOtp && (
+                    <button
+                      type="button"
+                      onClick={() => setOtpVal(demoOtp)}
+                      className="text-amber-400 font-mono font-bold bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 text-[11px]"
+                    >
+                      Use demo code: {demoOtp}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-3 py-2">
+                <div className="flex items-center gap-2 sm:gap-3 justify-center">
+                  {otpBoxes.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => (otpInputRefs.current[idx] = el)}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                      onPaste={handleDigitPaste}
+                      autoFocus={idx === 0}
+                      className="w-11 h-14 sm:w-12 sm:h-16 text-center text-2xl font-mono font-black rounded-2xl bg-slate-950/90 border-2 border-emerald-500/50 focus:border-emerald-400 focus:bg-emerald-950/20 text-emerald-300 outline-none transition-all shadow-lg shadow-emerald-950/40"
+                    />
+                  ))}
+                </div>
+                {hasLive && (
+                  <button
+                    type="button"
+                    onClick={() => onSubmitResponse({ action: 'HANDOFF_COMPLETE' })}
+                    className="text-[11px] font-semibold text-sky-300 hover:text-sky-200 underline decoration-dotted"
+                  >
+                    I entered the code directly in the live browser
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={dismissGate}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={!otpVal.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Verify and continue</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Section review */}
+          {activeGate.gate_type === 'SECTION_APPROVAL' && (
+            <div className="space-y-4">
+              {!editingSection ? (
+                <>
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 font-medium">
+                    Section {activeGate.section_number} is ready. Check these details against the
+                    live form before continuing. You can also edit any field directly in the
+                    live browser.
+                  </div>
+
+                  {activeGate.fields_filled?.length > 0 ? (
+                    <div className="max-h-52 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-3">
+                      <table className="w-full text-left text-xs font-mono">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-slate-400">
+                            <th className="pb-2">Field</th>
+                            <th className="pb-2">Filled value</th>
+                            <th className="pb-2 text-right">Source</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {activeGate.fields_filled.map((field, index) => (
+                            <tr key={index} className="hover:bg-slate-900/50">
+                              <td className="py-1.5 text-slate-300">{field.field_label}</td>
+                              <td className="py-1.5 text-amber-300 font-semibold">{field.injected_value}</td>
+                              <td className="py-1.5 text-right text-emerald-400 font-sans text-[10px]">
+                                {field.provenance === 'user-entered-now' ? 'You' : 'Profile'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">No fields were filled in this section.</p>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-800">
+                    {hasLive ? (
+                      <button
+                        type="button"
+                        onClick={() => setEditingSection(true)}
+                        className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                      >
+                        I need to edit something
+                      </button>
+                    ) : (
+                      <span />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleSectionApproval(true)}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm flex items-center gap-2 shadow-lg"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Confirm and continue</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="p-4 rounded-xl bg-sky-500/10 border border-sky-500/40 text-xs text-sky-200 leading-relaxed">
+                    <div className="flex items-center gap-2 font-bold text-sky-300 uppercase tracking-wider text-[10px] mb-1">
+                      <MousePointer2 className="w-4 h-4" />
+                      Agent paused for your edits
+                    </div>
+                    Edit fields directly in the live browser above. When the section looks right,
+                    continue and FormPilot will move to the next step. Your edits are not
+                    overwritten while this panel is open.
+                  </div>
+                  <div className="flex items-center justify-between gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setEditingSection(false)}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                    >
+                      Back to review
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSectionApproval(true)}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm flex items-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Done editing — continue</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Live photo / file upload */}
+          {isUploadGate && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+                  {activeGate.gate_type === 'LIVE_PHOTO' ? <Camera className="w-4 h-4 text-sky-300" /> : <Upload className="w-4 h-4 text-sky-300" />}
+                  <span>{activeGate.field_label || 'Requested file'}</span>
+                  {activeGate.live_photo_required && (
+                    <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      live photo
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mt-2 leading-relaxed">{activeGate.description}</p>
+                {instructions.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {instructions.map((instruction, index) => (
+                      <li key={index} className="text-[11px] text-slate-500 flex items-start gap-1.5">
+                        <span className="text-slate-600 mt-0.5">•</span>
+                        <span>{instruction}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {cameraActive ? (
+                <div className="rounded-2xl overflow-hidden bg-black border border-slate-700 relative">
+                  <video ref={videoRef} playsInline muted className="w-full max-h-64 object-cover" />
+                  <div className="absolute inset-x-0 bottom-0 p-2 flex items-center justify-center gap-2 bg-gradient-to-t from-black/80 to-transparent">
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      className="px-4 py-2 rounded-xl bg-white text-slate-950 text-xs font-extrabold flex items-center gap-1.5"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Take photo</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="px-3 py-2 rounded-xl bg-slate-800/90 text-slate-200 text-xs font-semibold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {photoPreview ? (
+                    <div className="rounded-2xl overflow-hidden bg-slate-950 border border-slate-700 relative">
+                      {photoFile?.type?.startsWith('image/') ? (
+                        <img src={photoPreview} alt="Selected file preview" className="w-full max-h-64 object-contain" />
+                      ) : (
+                        <div className="flex items-center gap-3 px-4 py-6">
+                          <FileUp className="w-7 h-7 text-sky-300 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-slate-200 truncate">
+                              {photoFile?.name || 'Selected file'}
+                            </div>
+                            <div className="text-[10px] font-mono text-slate-500">
+                              {photoFile ? `${Math.ceil(photoFile.size / 1024)} KB` : ''}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-950/80 hover:bg-slate-900 text-slate-200 border border-slate-700"
+                        title="Choose a different file"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950/60 p-6 text-center">
+                      <ImageIcon className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                      <p className="text-xs text-slate-400">
+                        {activeGate.gate_type === 'LIVE_PHOTO'
+                          ? 'Use your camera for a live photo, or choose a recent photo of yourself.'
+                          : 'Choose the file the portal asks for.'}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {activeGate.gate_type === 'LIVE_PHOTO' && (
+                      <button
+                        type="button"
+                        onClick={startCamera}
+                        className="px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-500/40 text-xs font-bold flex items-center gap-1.5"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Use my camera</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <FileUp className="w-3.5 h-3.5" />
+                      <span>{photoPreview ? 'Choose another file' : 'Choose a file'}</span>
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={activeGate.accept || 'image/*,application/pdf'}
+                      capture={activeGate.gate_type === 'LIVE_PHOTO' ? 'user' : undefined}
+                      onChange={chooseFile}
+                      className="hidden"
+                    />
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {activeGate.accept || 'JPG, PNG, WEBP or PDF'} · max {activeGate.max_size_mb || 5} MB
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {cameraError && (
+                <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-[11px] text-amber-200">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{cameraError}</span>
+                </div>
+              )}
+              {uploadError && (
+                <div className="flex items-start gap-2 rounded-xl bg-red-500/10 border border-red-500/30 px-3 py-2 text-[11px] text-red-200">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              {activeGate.privacy_note && (
+                <p className="text-[10px] text-slate-500">{activeGate.privacy_note}</p>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                {hasLive && (
+                  <button
+                    type="button"
+                    onClick={() => onSubmitResponse({ action: 'UPLOAD_COMPLETE', field_key: activeGate.field_key })}
+                    className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                  >
+                    I attached it in the live browser
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={submitUpload}
+                  disabled={!photoFile || uploading}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-slate-950 font-extrabold text-sm flex items-center gap-2 disabled:opacity-50"
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  <span>{uploading ? 'Attaching…' : 'Attach to the live portal'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Safety handover: payment or final submission */}
+          {activeGate.gate_type === 'PRE_PAYMENT_SAFETY_LOCK' && (
+            <div className="space-y-4">
+              <div className="p-5 rounded-2xl bg-gradient-to-b from-red-950/40 via-red-950/20 to-slate-950 border-2 border-red-500/50 text-red-200 shadow-xl shadow-red-950/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-300 shadow-inner shrink-0">
+                    <SecurityShieldIcon className="w-6 h-6 text-red-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 uppercase tracking-widest font-mono">
+                        Cryptographic Safety Barrier
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-extrabold text-white mt-0.5">
+                      {activeGate.final_action === 'submission' ? 'Zero-Autopilot Submission Lock' : 'Zero-Touch Payment Safety Lock'}
+                    </h4>
+                  </div>
+                </div>
+                <p className="text-xs text-red-200/90 mt-3 leading-relaxed">
+                  {activeGate.description}
+                </p>
+              </div>
+
+              {hasLive && (
+                <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-[11px] text-sky-200 leading-relaxed">
+                  The live browser is on the right. Complete the payment or final submission
+                  yourself there. FormPilot will not click the payment or submit button, and it
+                  will not fill card, UPI or OTP details.
+                </div>
+              )}
+
+              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+                    Details check before you continue
+                  </span>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono">
+                    {activeGate.total_verified_fields} of {activeGate.total_checked_fields || activeGate.total_verified_fields} checked
+                  </span>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-400">
+                        <th className="pb-2">Field</th>
+                        <th className="pb-2">Saved value</th>
+                        <th className="pb-2 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {activeGate.audit_diff?.map((record, index) => (
+                        <tr key={index}>
+                          <td className="py-1.5 text-slate-300">{record.field}</td>
+                          <td className="py-1.5 text-amber-300 font-semibold">{record.vault_value}</td>
+                          <td className={`py-1.5 text-right font-bold ${statusClass(record.status)}`}>
+                            {statusLabel(record.status)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300">
+                <strong>Next step:</strong>{' '}
+                {activeGate.final_action === 'submission'
+                  ? 'complete the final submission yourself on the official portal.'
+                  : 'complete the payment yourself on the official portal.'}{' '}
+                FormPilot never pays or submits.
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                {activeGate.run_id ? (
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`/runs/${activeGate.run_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-sky-300 text-xs font-semibold border border-sky-500/40 flex items-center gap-1.5"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Run report</span>
+                    </a>
+                    <a
+                      href={`/api/runs/${activeGate.run_id}/audit`}
+                      className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700 flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download details</span>
+                    </a>
+                  </div>
+                ) : (
+                  <span />
+                )}
+                <button
+                  type="button"
+                  onClick={() => onSubmitResponse({ action: 'ACKNOWLEDGE_LOCK' })}
+                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700"
+                >
+                  Understood
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Portal error */}
+          {activeGate.gate_type === 'ERROR_DIAGNOSIS' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300">
+                <span className="font-bold block mb-1">The portal showed this message:</span>
+                <span className="font-mono">{activeGate.error_text}</span>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+                  How would you like to continue?
+                </span>
+                <div className="grid grid-cols-1 gap-2">
+                  {activeGate.suggested_actions?.map((action, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => onSubmitResponse({ action: 'ERROR_RECOVERY', choice: action })}
+                      className="p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-left text-xs text-slate-200 font-medium transition-all flex items-center justify-between"
+                    >
+                      <span>{action}</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {hasLive && (
+                <p className="text-[11px] text-slate-500">
+                  You can correct the highlighted field in the live browser before choosing
+                  “Try again”.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Fallback */}
+          {!LIVE_GATES.has(activeGate.gate_type)
+            && !['GATEWAY_DECISION', 'ACCOUNT_CONFLICT', 'LOGIN_METHOD', 'ACCOUNT_IDENTIFIER', 'FILL_INCOMPLETE', 'MISSING_FIELD', 'CAPTCHA_SOLVE', 'OTP_RELAY', 'SECTION_APPROVAL', 'PRE_PAYMENT_SAFETY_LOCK', 'ERROR_DIAGNOSIS'].includes(activeGate.gate_type) && (
+              <div className="space-y-4 text-center py-2">
+                <p className="text-sm text-slate-300">
+                  {activeGate.description || 'FormPilot is waiting for your confirmation to continue.'}
+                </p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onSubmitResponse({ action: 'CONTINUE' })}
+                    className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm"
+                  >
+                    Continue
+                  </button>
+                  <button
+                    type="button"
+                    onClick={dismissGate}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+        </div>
+      </div>
+    </div>
+  );
+}

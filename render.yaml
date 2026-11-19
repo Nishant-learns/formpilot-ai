@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: formpilot-backend
+    runtime: docker
+    plan: starter
+    region: oregon
+    envVars:
+      - key: FORMPILOT_ENV
+        value: production
+      - key: FORMPILOT_DEMO_MODE
+        value: "1"
+      - key: FORMPILOT_ACCOUNTS_REQUIRED
+        value: "1"
+      - key: FORMPILOT_CORS_ORIGINS
+        value: "https://formpilot-assistant.vercel.app,http://localhost:5173"
+      - key: FORMPILOT_ENABLE_SIMULATOR
+        value: "1"
+      - key: FORMPILOT_PRACTICE_PORTAL_URL
+        value: "https://gov-portal-simulator.vercel.app"
+      # Operator-owned shared credentials.  Set the secrets in the Render
+      # dashboard; users of the pilot do not bring their own keys.
+      - key: TINYFISH_API_KEY
+        sync: false
+      - key: FORMPILOT_LLM_API_KEY
+        sync: false
+      - key: FORMPILOT_LLM_MODEL
+        value: gpt-4o-mini
+      - key: FORMPILOT_LLM_BASE_URL
+        value: https://api.openai.com/v1
+    # Accounts, vaults, sealed documents and run journals live here.  Without
+    # a persistent disk every redeploy or restart wipes every user's data.
+    disk:
+      name: formpilot-data
+      mountPath: /app/data
+      sizeGB: 1

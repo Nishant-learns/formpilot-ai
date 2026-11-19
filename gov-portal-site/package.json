@@ -1,0 +1,10 @@
+{
+  "name": "gov-portal-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Public recruitment and examination practice portal simulator for FormPilot",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  }
+}
