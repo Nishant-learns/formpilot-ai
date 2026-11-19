@@ -18,6 +18,111 @@ const WELCOME = {
   action_taken: 'GREETING',
 };
 
+function FormattedMessage({ text, isUser }) {
+  if (!text) return null;
+  if (isUser) {
+    return <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{text}</div>;
+  }
+
+  const lines = text.split('\n');
+
+  const formatInline = (str) => {
+    const parts = [];
+    const regex = /(\*\*.*?\*\*|`.*?`|https?:\/\/[^\s]+)/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(str)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(str.substring(lastIndex, match.index));
+      }
+      const token = match[0];
+      if (token.startsWith('**') && token.endsWith('**')) {
+        parts.push(
+          <strong key={match.index} className="font-bold text-white tracking-wide">
+            {token.slice(2, -2)}
+          </strong>
+        );
+      } else if (token.startsWith('`') && token.endsWith('`')) {
+        parts.push(
+          <code
+            key={match.index}
+            className="rounded bg-black/50 px-1.5 py-0.5 font-mono text-[12px] font-medium text-emerald-300 border border-emerald-500/20"
+          >
+            {token.slice(1, -1)}
+          </code>
+        );
+      } else if (token.startsWith('http')) {
+        parts.push(
+          <a
+            key={match.index}
+            href={token}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sky-300 underline decoration-sky-400/40 hover:text-sky-200"
+          >
+            {token}
+          </a>
+        );
+      }
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < str.length) {
+      parts.push(str.substring(lastIndex));
+    }
+    return parts.length ? parts : str;
+  };
+
+  return (
+    <div className="space-y-1.5 break-words text-[13.5px] sm:text-[14px] leading-relaxed text-slate-100 font-normal">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={idx} className="h-2" />;
+        }
+
+        const bulletMatch = trimmed.match(/^([•\-\*]|\d+\.)\s+(.+)$/);
+        if (bulletMatch) {
+          const marker = bulletMatch[1];
+          const content = bulletMatch[2];
+          const isNum = /\d+\./.test(marker);
+          return (
+            <div key={idx} className="flex items-start gap-2.5 pl-0.5 py-1">
+              {isNum ? (
+                <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-[11px] mt-0.5 select-none">
+                  {marker.replace('.', '')}
+                </span>
+              ) : (
+                <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/25 text-emerald-300 font-black text-xs mt-1 select-none">
+                  •
+                </span>
+              )}
+              <div className="flex-1 text-slate-100 leading-relaxed">{formatInline(content)}</div>
+            </div>
+          );
+        }
+
+        const isHeading = trimmed.startsWith('#') || (trimmed.startsWith('**') && trimmed.endsWith('**') && !trimmed.slice(2, -2).includes('**'));
+        if (isHeading) {
+          const headingText = trimmed.replace(/^#+\s*/, '').replace(/^\*\*|\*\*$/g, '');
+          return (
+            <div key={idx} className="font-extrabold text-white text-[15px] sm:text-[15.5px] pt-2 pb-1 tracking-tight flex items-center gap-2 border-b border-emerald-500/30 mb-2 mt-1">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400" />
+              <span>{headingText}</span>
+            </div>
+          );
+        }
+
+        return (
+          <div key={idx} className="text-slate-100 leading-relaxed py-0.5">
+            {formatInline(trimmed)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function LiveChat({
   onSendMessage,
   chatMessages,
@@ -223,76 +328,76 @@ export default function LiveChat({
               key={`${m.time}-${i}-${m.sender}`}
               className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-fadeIn`}
             >
-              <div className="flex items-center gap-1.5 mb-1 text-[10px] text-slate-500">
+              <div className="flex items-center gap-1.5 mb-1 text-[11px] text-slate-400 font-medium">
                 {isUser ? (
                   <>
-                    <span className="text-indigo-300 font-semibold">You</span>
-                    <Clock className="w-2.5 h-2.5" />
+                    <span className="text-indigo-300 font-bold">You</span>
+                    <Clock className="w-3 h-3 text-slate-500" />
                     <span>{m.time}</span>
                   </>
                 ) : (
                   <>
-                    <span className="text-indigo-400 font-semibold">FormPilot</span>
-                    <Clock className="w-2.5 h-2.5" />
+                    <span className="text-emerald-400 font-bold">FormPilot Copilot</span>
+                    <Clock className="w-3 h-3 text-slate-500" />
                     <span>{m.time}</span>
                   </>
                 )}
               </div>
 
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed transition-all ${
+                className={`transition-all ${
                   isUser
-                    ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white font-medium rounded-tr-sm shadow-md shadow-indigo-600/20 border border-indigo-400/30'
-                    : 'glass-panel-elevated text-slate-100 rounded-tl-sm shadow-lg'
+                    ? 'max-w-[90%] sm:max-w-[85%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-700 text-white font-medium px-4 py-3 shadow-md shadow-indigo-600/25 border border-indigo-400/30 text-sm leading-relaxed'
+                    : 'max-w-[95%] sm:max-w-[88%] rounded-2xl rounded-tl-sm bg-[#121b16] border border-white/12 text-slate-100 px-4 py-3.5 shadow-xl shadow-black/40 text-sm leading-relaxed'
                 }`}
               >
-                <div className="whitespace-pre-line">{m.text}</div>
+                <FormattedMessage text={m.text} isUser={isUser} />
 
                 {m.action_taken === 'FIELD_UPDATED' && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 font-semibold">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-1.5 text-xs text-emerald-300 font-semibold bg-emerald-500/10 px-2 py-1 rounded-lg">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>Updated: {m.field_updated} → {m.new_value}</span>
                   </div>
                 )}
                 {m.action_taken === 'PAUSED' && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono text-amber-400 font-semibold">
-                    <PauseCircle className="w-3 h-3 text-amber-400 shrink-0" />
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-1.5 text-xs text-amber-300 font-semibold bg-amber-500/10 px-2 py-1 rounded-lg">
+                    <PauseCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <span>Application paused</span>
                   </div>
                 )}
                 {m.action_taken === 'RESUMED' && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 font-semibold">
-                    <PlayCircle className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-1.5 text-xs text-emerald-300 font-semibold bg-emerald-500/10 px-2 py-1 rounded-lg">
+                    <PlayCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>Application resumed</span>
                   </div>
                 )}
                 {m.action_taken === 'LIVE_SEARCH' && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono text-cyan-400 font-semibold">
-                    <Search className="w-3 h-3 text-cyan-400 shrink-0" />
-                    <span>Live web results</span>
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-1.5 text-xs text-cyan-300 font-semibold bg-cyan-500/10 px-2 py-1 rounded-lg">
+                    <Search className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>Verified official web results</span>
                   </div>
                 )}
                 {['ENTRY_MODE_SELECTED', 'ENTRY_MODE_REQUESTED'].includes(m.action_taken) && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono text-sky-300 font-semibold">
-                    <CheckCircle2 className="w-3 h-3 text-sky-300 shrink-0" />
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-1.5 text-xs text-sky-300 font-semibold bg-sky-500/10 px-2 py-1 rounded-lg">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-sky-300 shrink-0" />
                     <span>Entry path: {m.entry_mode || 'selected'}</span>
                   </div>
                 )}
                 {m.action_taken === 'LOGIN_METHOD_SELECTED' && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono text-emerald-300 font-semibold">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-300 shrink-0" />
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-1.5 text-xs text-emerald-300 font-semibold bg-emerald-500/10 px-2 py-1 rounded-lg">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
                     <span>Sign-in method: {String(m.login_method || '').replace(/_/g, ' ')}</span>
                   </div>
                 )}
                 {m.action_taken === 'ACCOUNT_IDENTIFIER_SELECTED' && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono text-slate-300 font-semibold">
-                    <CheckCircle2 className="w-3 h-3 text-slate-300 shrink-0" />
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-1.5 text-xs text-slate-300 font-semibold bg-white/5 px-2 py-1 rounded-lg">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-300 shrink-0" />
                     <span>Account identified by: {String(m.login_identifier || '').replace(/_/g, ' ')}</span>
                   </div>
                 )}
                 {['FILL_RECHECK', 'FILL_CONTINUE', 'FILL_INCOMPLETE'].includes(m.action_taken) && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono text-amber-300 font-semibold">
-                    <AlertTriangle className="w-3 h-3 text-amber-300 shrink-0" />
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-1.5 text-xs text-amber-300 font-semibold bg-amber-500/10 px-2 py-1 rounded-lg">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                     <span>
                       {m.action_taken === 'FILL_RECHECK'
                         ? 'Rechecking every field'
@@ -308,21 +413,21 @@ export default function LiveChat({
         })}
 
         {loading && (
-          <div className="flex items-center gap-2 text-xs text-indigo-400 animate-pulse py-1">
-            <Sparkles className="w-3.5 h-3.5 animate-spin" />
+          <div className="flex items-center gap-2 text-sm text-emerald-400 animate-pulse py-1 font-medium">
+            <Sparkles className="w-4 h-4 animate-spin text-emerald-400" />
             <span>FormPilot is reasoning…</span>
           </div>
         )}
       </div>
 
       {/* Suggested Prompt Chips */}
-      <div className="px-3 py-2 bg-white/[0.02] border-t border-white/[0.08] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+      <div className="px-3 py-2 bg-white/[0.02] border-t border-white/[0.08] flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
         {chips.map((chip, idx) => (
           <button
             key={`${chip.label}-${idx}`}
             type="button"
             onClick={() => handleSend(chip.query)}
-            className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-indigo-500/15 text-slate-300 hover:text-indigo-200 text-xs font-medium border border-white/[0.08] hover:border-indigo-500/40 transition-all shrink-0 shadow-sm"
+            className="whitespace-nowrap px-3.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-emerald-500/15 text-slate-200 hover:text-emerald-200 text-xs font-semibold border border-white/10 hover:border-emerald-500/40 transition-all shrink-0 shadow-sm"
           >
             {chip.label}
           </button>
@@ -335,21 +440,21 @@ export default function LiveChat({
           e.preventDefault();
           handleSend();
         }}
-        className="p-3 bg-[#0d1210]/80 border-t border-white/[0.08] flex items-center gap-2 shrink-0"
+        className="p-3 bg-[#0d1210]/95 border-t border-white/[0.08] flex items-center gap-2 shrink-0"
       >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask a question or command an update…"
-          className="flex-1 px-4 py-2.5 rounded-xl glass-input text-slate-100 placeholder-slate-500 text-xs font-medium outline-none"
+          placeholder="Ask about documents, JEE Main rules, or update your profile…"
+          className="flex-1 px-4 py-2.5 rounded-xl glass-input text-slate-100 placeholder-slate-400 text-sm font-medium outline-none transition-all focus:border-emerald-500/50"
         />
 
         <button
           type="submit"
           disabled={!input.trim() || loading}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           <span>Send</span>
           <Send className="w-3.5 h-3.5" />
