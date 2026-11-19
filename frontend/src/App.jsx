@@ -16,7 +16,6 @@ import SettingsPage from './pages/SettingsPage';
 import CognitiveStreamPage from './pages/CognitiveStreamPage';
 import DomTelemetryPage from './pages/DomTelemetryPage';
 import HelpPage from './pages/HelpPage';
-import TechDocsPage from './pages/TechDocsPage';
 import AuthPage from './pages/AuthPage';
 import SessionStrip from './components/SessionStrip';
 import MobileTabBar from './components/MobileTabBar';
@@ -1035,8 +1034,6 @@ export default function App() {
                 onReplayTour={() => setTourOpen(true)}
                 onSelectNav={handleSelectNav}
               />
-            ) : sidebarNav === 'docs' ? (
-              <TechDocsPage onSelectNav={handleSelectNav} />
             ) : sidebarNav === 'stream' ? (
               <CognitiveStreamPage events={events} voiceEnabled={voiceEnabled} />
             ) : sidebarNav === 'map' ? (
