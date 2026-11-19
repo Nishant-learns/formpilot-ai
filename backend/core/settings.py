@@ -21,11 +21,13 @@ def _env_bool(name: str, default: bool) -> bool:
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv(ROOT_DIR / ".env")
-except Exception:
-    pass
+# In tests (conftest.py sets clean isolated env vars), do not overwrite with live credentials
+if "PYTEST_CURRENT_TEST" not in os.environ and "formpilot-tests-" not in os.environ.get("FORMPILOT_DATA_DIR", ""):
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(ROOT_DIR / ".env", override=True)
+    except Exception:
+        pass
 
 APP_NAME = "FormPilot"
 APP_VERSION = "1.1.0"
@@ -79,6 +81,7 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", os.getenv("FORMPILOT_GO
 
 # TinyFish
 TINYFISH_API_KEY = os.getenv("TINYFISH_API_KEY", "").strip()
+TINYFISH_BACKUP_API_KEY = os.getenv("TINYFISH_BACKUP_API_KEY", "").strip()
 TINYFISH_MODE = os.getenv("TINYFISH_MODE", "auto").strip().lower()
 TINYFISH_SEARCH_URL = os.getenv("TINYFISH_SEARCH_URL", "https://api.search.tinyfish.ai").rstrip("/")
 TINYFISH_BROWSER_URL = os.getenv("TINYFISH_BROWSER_URL", "https://api.browser.tinyfish.ai").rstrip("/")

@@ -195,8 +195,22 @@ class TinyFishClient:
         return (os.getenv("TINYFISH_API_KEY") or self.config.tinyfish_api_key or "").strip()
 
     @property
+    def backup_api_key(self) -> str:
+        return (os.getenv("TINYFISH_BACKUP_API_KEY") or getattr(settings, "TINYFISH_BACKUP_API_KEY", "") or "").strip()
+
+    def get_api_keys(self) -> list[str]:
+        keys = []
+        primary = self.api_key
+        if primary:
+            keys.append(primary)
+        backup = self.backup_api_key
+        if backup and backup != primary:
+            keys.append(backup)
+        return keys
+
+    @property
     def is_configured(self) -> bool:
-        return bool(self.api_key)
+        return bool(self.api_key or self.backup_api_key)
 
     def effective_mode(self, target_url: str = "") -> str:
         if self.config.mode == "local":
@@ -330,52 +344,64 @@ class TinyFishClient:
             self.active_session = session
             return session
 
-        headers = self._headers()
-        payload: dict[str, Any] = {
-            "url": target_url,
-            "timeout_seconds": int(timeout_seconds or self.config.timeout_seconds),
-        }
-        region = self.config.proxy_region.upper()
-        if len(region) == 2:
-            payload["proxy_config"] = {"country_code": region}
+        keys = self.get_api_keys() or [""]
+        last_error: Optional[Exception] = None
 
-        started = time.time()
-        try:
-            async with self._http(timeout=75.0) as client:
-                response = await client.post(
-                    self.config.tinyfish_browser_api_url,
-                    headers=headers,
-                    json=payload,
+        for k in keys:
+            headers = self._headers(k)
+            payload: dict[str, Any] = {
+                "url": target_url,
+                "timeout_seconds": int(timeout_seconds or self.config.timeout_seconds),
+            }
+            region = self.config.proxy_region.upper()
+            if len(region) == 2:
+                payload["proxy_config"] = {"country_code": region}
+
+            started = time.time()
+            try:
+                async with self._http(timeout=75.0) as client:
+                    response = await client.post(
+                        self.config.tinyfish_browser_api_url,
+                        headers=headers,
+                        json=payload,
+                    )
+            except httpx.HTTPError as exc:
+                last_error = TinyFishError(
+                    f"Could not reach TinyFish Browser API: {exc}",
+                    code="network_error",
                 )
-        except httpx.HTTPError as exc:
-            raise TinyFishError(
-                f"Could not reach TinyFish Browser API: {exc}",
-                code="network_error",
-            ) from exc
+                continue
 
-        if response.status_code not in (200, 201):
-            raise self._error_from_response(response, "Browser API")
+            if response.status_code not in (200, 201):
+                last_error = self._error_from_response(response, "Browser API")
+                if response.status_code in (401, 402, 429) and len(keys) > 1 and k != keys[-1]:
+                    continue
+                continue
 
-        data = response.json() if response.content else {}
-        cdp_url = str(data.get("cdp_url") or "")
-        if not cdp_url:
-            raise TinyFishError(
-                "TinyFish Browser API returned no CDP URL.",
-                status_code=response.status_code,
-                code="invalid_browser_response",
+            data = response.json() if response.content else {}
+            cdp_url = str(data.get("cdp_url") or "")
+            if not cdp_url:
+                raise TinyFishError(
+                    "TinyFish Browser API returned no CDP URL.",
+                    status_code=response.status_code,
+                    code="invalid_browser_response",
+                )
+
+            session = TinyFishSession(
+                session_id=str(data.get("session_id") or ""),
+                cdp_url=cdp_url,
+                base_url=str(data.get("base_url") or ""),
+                proxy_node=f"TinyFish {region} cloud browser",
+                country_code=region,
+                created_at=started,
+                is_cloud=True,
             )
+            self.active_session = session
+            return session
 
-        session = TinyFishSession(
-            session_id=str(data.get("session_id") or ""),
-            cdp_url=cdp_url,
-            base_url=str(data.get("base_url") or ""),
-            proxy_node=f"TinyFish {region} cloud browser",
-            country_code=region,
-            created_at=started,
-            is_cloud=True,
-        )
-        self.active_session = session
-        return session
+        if isinstance(last_error, TinyFishError):
+            raise last_error
+        raise TinyFishError("All TinyFish Browser API keys failed.", code="browser_failed")
 
     async def terminate_session(self, session_id: Optional[str] = None) -> bool:
         session = self.active_session
@@ -416,22 +442,36 @@ class TinyFishClient:
             params["purpose"] = purpose
         if include_domains:
             params["include_domains"] = ",".join(include_domains)
-        headers = self._headers(api_key)
-        try:
-            async with self._http(timeout=25.0) as client:
-                response = await client.get(
-                    self.config.tinyfish_search_api_url,
-                    headers=headers,
-                    params=params,
-                )
-        except httpx.HTTPError as exc:
-            raise TinyFishError(f"Could not reach TinyFish Search API: {exc}", code="network_error") from exc
 
-        if response.status_code != 200:
-            raise self._error_from_response(response, "Search API")
-        data = response.json() if response.content else {}
-        results = data.get("results", data if isinstance(data, list) else [])
-        return [item for item in results if isinstance(item, dict)][: max(1, limit)]
+        candidate_keys = [api_key] if api_key else (self.get_api_keys() or [""])
+        last_error: Optional[Exception] = None
+
+        for k in candidate_keys:
+            headers = self._headers(k)
+            try:
+                async with self._http(timeout=25.0) as client:
+                    response = await client.get(
+                        self.config.tinyfish_search_api_url,
+                        headers=headers,
+                        params=params,
+                    )
+            except httpx.HTTPError as exc:
+                last_error = TinyFishError(f"Could not reach TinyFish Search API: {exc}", code="network_error")
+                continue
+
+            if response.status_code != 200:
+                last_error = self._error_from_response(response, "Search API")
+                if response.status_code in (401, 402, 429) and len(candidate_keys) > 1 and k != candidate_keys[-1]:
+                    continue
+                continue
+
+            data = response.json() if response.content else {}
+            results = data.get("results", data if isinstance(data, list) else [])
+            return [item for item in results if isinstance(item, dict)][: max(1, limit)]
+
+        if isinstance(last_error, TinyFishError):
+            raise last_error
+        raise TinyFishError("All TinyFish Search attempts failed.", code="search_failed")
 
     # ------------------------------------------------------------------ fetch
 
@@ -452,24 +492,38 @@ class TinyFishClient:
         }
         if purpose:
             payload["purpose"] = purpose
-        try:
-            async with self._http(timeout=60.0) as client:
-                response = await client.post(
-                    self.config.tinyfish_fetch_api_url,
-                    headers=self._headers(),
-                    json=payload,
-                )
-        except httpx.HTTPError as exc:
-            raise TinyFishError(f"Could not reach TinyFish Fetch API: {exc}", code="network_error") from exc
 
-        if response.status_code not in (200, 201):
-            raise self._error_from_response(response, "Fetch API")
-        data = response.json() if response.content else {}
-        results = data.get("results", data if isinstance(data, list) else [])
-        if isinstance(results, list) and results:
-            first = results[0]
-            return first if isinstance(first, dict) else {"content": str(first)}
-        return data if isinstance(data, dict) else {"content": str(data)}
+        candidate_keys = self.get_api_keys() or [""]
+        last_error: Optional[Exception] = None
+
+        for k in candidate_keys:
+            try:
+                async with self._http(timeout=60.0) as client:
+                    response = await client.post(
+                        self.config.tinyfish_fetch_api_url,
+                        headers=self._headers(k),
+                        json=payload,
+                    )
+            except httpx.HTTPError as exc:
+                last_error = TinyFishError(f"Could not reach TinyFish Fetch API: {exc}", code="network_error")
+                continue
+
+            if response.status_code not in (200, 201):
+                last_error = self._error_from_response(response, "Fetch API")
+                if response.status_code in (401, 402, 429) and len(candidate_keys) > 1 and k != candidate_keys[-1]:
+                    continue
+                continue
+
+            data = response.json() if response.content else {}
+            results = data.get("results", data if isinstance(data, list) else [])
+            if isinstance(results, list) and results:
+                first = results[0]
+                return first if isinstance(first, dict) else {"content": str(first)}
+            return data if isinstance(data, dict) else {"content": str(data)}
+
+        if isinstance(last_error, TinyFishError):
+            raise last_error
+        raise TinyFishError("All TinyFish Fetch attempts failed.", code="fetch_failed")
 
     # ------------------------------------------------------------------ health
 

@@ -61,12 +61,10 @@ function Field({ icon: Icon, label, children }) {
   );
 }
 
-const GOOGLE_CLIENT_ID_FALLBACK = '128189450128-65rlop2c8ic54ohq3emh88n36drqcge7.apps.googleusercontent.com';
-
 export default function AuthPage({ status, onAuthenticated, onContinueAsGuest }) {
   const accountsEnabled = status?.accounts_enabled !== false;
   const accountsRequired = status?.accounts_required !== false;
-  const googleClientId = status?.google_client_id || import.meta.env.VITE_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID_FALLBACK;
+  const googleClientId = status?.google_client_id || import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   const [showGoogleGuide, setShowGoogleGuide] = useState(false);
   const googleBtnRef = useRef(null);
 
