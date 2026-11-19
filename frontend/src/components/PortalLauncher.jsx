@@ -85,6 +85,12 @@ export default function PortalLauncher({ onLaunch, agentRunning, sessionOpen }) 
       desc: 'Safe recruitment sandbox for testing (4 steps, demo OTP & mock CAPTCHA).',
     },
     {
+      label: 'JEE Main 2026',
+      val: 'jee main',
+      icon: GovEmblemIcon,
+      desc: 'Official JEE (Main) National Testing Agency blueprint & portal',
+    },
+    {
       label: 'Railway RRB',
       val: 'apply for railway',
       icon: RailwaySealIcon,
@@ -149,6 +155,14 @@ export default function PortalLauncher({ onLaunch, agentRunning, sessionOpen }) 
               Load Demo
             </button>
             <span className="text-slate-600">|</span>
+            <button
+              type="button"
+              onClick={() => updateQuery('jee main')}
+              className="font-bold text-amber-400 hover:text-amber-300 transition-colors underline decoration-amber-500/40 underline-offset-2"
+            >
+              JEE Main
+            </button>
+            <span className="text-slate-600">|</span>
             <a
               href={LIVE_TEST_PORTAL_URL}
               target="_blank"
@@ -174,7 +188,7 @@ export default function PortalLauncher({ onLaunch, agentRunning, sessionOpen }) 
                 value={query}
                 onChange={(e) => updateQuery(e.target.value)}
                 disabled={agentRunning}
-                placeholder="Enter official portal URL or exam name (e.g. SSC CGL, RRB NTPC, UPSC)..."
+                placeholder="Enter exam name or portal URL (e.g. JEE Main 2026, NTA JEE, SSC CGL)..."
                 className="w-full rounded-xl glass-input py-2.5 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-100 outline-none transition-all placeholder:text-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40 disabled:opacity-50"
               />
               {query && (

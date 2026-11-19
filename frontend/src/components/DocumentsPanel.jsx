@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, Check, Download, FileText, Lock, Trash2, Upload } from 'lucide-react';
+import { AlertCircle, Check, Download, FileText, Lock, Sparkles, Trash2, Upload } from 'lucide-react';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf';
 
@@ -29,6 +29,7 @@ export default function DocumentsPanel({ notify }) {
   const [docTypes, setDocTypes] = useState(FALLBACK_TYPES);
   const [loading, setLoading] = useState(true);
   const [busyType, setBusyType] = useState('');
+  const [prefilling, setPrefilling] = useState(false);
   const [error, setError] = useState('');
   const inputs = useRef({});
 
@@ -84,15 +85,41 @@ export default function DocumentsPanel({ notify }) {
     }
   };
 
+  const handlePrefillTest = async () => {
+    setPrefilling(true);
+    setError('');
+    try {
+      const res = await fetch('/api/vault/documents/prefill-test', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.detail || 'Could not prefill test documents.');
+      await load();
+      if (notify) notify('Sample candidate photo and signature sealed in vault.', 'success');
+    } catch (err) {
+      setError(err.message || 'Could not prefill test documents.');
+    } finally {
+      setPrefilling(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <div className="flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 text-[11px] text-emerald-100">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-        <span>
-          Every file is sealed with AES-256-GCM before it touches the disk, and the index is sealed
-          too. Downloads go through the API, never a public folder. Nothing here is shared with a
-          portal until a form asks for it.
-        </span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 text-[11px] text-emerald-100">
+        <div className="flex items-start gap-2">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+          <span>
+            Every file is sealed with AES-256-GCM before it touches the disk. Test folder files are pre-loaded for instant evaluation.
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={handlePrefillTest}
+          disabled={prefilling}
+          className="shrink-0 flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/20 hover:bg-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-200 transition-all shadow-sm"
+          title="Pre-fill test photo and signature into vault"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-emerald-300" />
+          <span>{prefilling ? 'Sealing…' : '⚡ Prefill Test Documents'}</span>
+        </button>
       </div>
 
       {error && (

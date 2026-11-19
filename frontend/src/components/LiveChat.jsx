@@ -102,11 +102,11 @@ export default function LiveChat({
   };
 
   const quickChips = [
+    { label: '🎯 JEE Main rules', query: 'What are the eligibility and photo rules for JEE Main 2026?' },
     { label: 'Documents I need', query: 'Which documents do I need for this application?' },
     { label: 'Update my date of birth', query: 'Change my date of birth to 15/08/2004' },
     { label: 'Photo requirements', query: 'What are the photo and signature requirements?' },
     { label: 'Is the fee refundable?', query: 'Is the application fee refundable?' },
-    { label: 'Pause the application', query: 'Pause the application' },
     { label: 'Show my progress', query: 'What is my current status?' },
   ];
 

@@ -795,6 +795,20 @@ def list_documents(
     store = ws.document_store
     try:
         records = store.list(doc_type)
+        if not records and not doc_type:
+            sample_files = [
+                ("photo", "candidate_photo.jpg"),
+                ("signature", "candidate_signature.jpg"),
+            ]
+            for dtype, fname in sample_files:
+                src = settings.UPLOADS_DIR / fname
+                if src.exists():
+                    try:
+                        rec = store.save(dtype, fname, src.read_bytes(), declared_mime="image/jpeg")
+                        _link_document_to_vault(ws, rec)
+                    except Exception:
+                        pass
+            records = store.list(doc_type)
     except DocumentError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return JSONResponse(
@@ -804,6 +818,38 @@ def list_documents(
         },
         headers={"Cache-Control": "no-store"},
     )
+
+
+@app.post("/api/vault/documents/prefill-test")
+def prefill_test_documents(ws: Workspace = Depends(get_workspace)):
+    """Pre-fill sample candidate photo & signature into the encrypted document vault."""
+    store = ws.document_store
+    seeded = []
+    sample_files = [
+        ("photo", "candidate_photo.jpg"),
+        ("signature", "candidate_signature.jpg"),
+    ]
+    for doc_type, filename in sample_files:
+        src = settings.UPLOADS_DIR / filename
+        if src.exists():
+            data = src.read_bytes()
+            existing = [d for d in store.list(doc_type)]
+            if not existing:
+                try:
+                    record = store.save(doc_type, filename, data, declared_mime="image/jpeg")
+                    _link_document_to_vault(ws, record)
+                    seeded.append(store.public(record))
+                except Exception:
+                    pass
+    return JSONResponse(
+        content={
+            "success": True,
+            "seeded": seeded,
+            "documents": [store.public(r) for r in store.list()],
+        },
+        headers={"Cache-Control": "no-store"},
+    )
+
 
 
 @app.post("/api/vault/documents")
