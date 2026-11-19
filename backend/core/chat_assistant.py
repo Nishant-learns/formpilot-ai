@@ -2272,9 +2272,32 @@ class FormPilotChatAssistant:
 
     def _try_faq(self, text: str) -> Optional[Dict[str, Any]]:
         text_lower = text.lower()
+        if re.search(r"\b(notification|latest|news|result|cut\s*off|admit\s*card|answer\s*key)\b", text_lower):
+            return None
         now = datetime.datetime.now().strftime("%H:%M")
 
-        if re.search(r"\b(je+|jee\s*main|iit\s*jee|nta\s*jee|jee\s*advanced|when\s+is\s+je+)\b", text_lower):
+        if re.search(r"\b(ssc|ssc\s*je|ssc\s*cgl|ssc\s*chsl|staff\s*selection)\b", text_lower):
+            return {
+                "reply": (
+                    "**Staff Selection Commission (SSC & SSC JE) Guidelines:**\n\n"
+                    "• **Official Portal:** Apply strictly through the official portal: `https://ssc.gov.in/`.\n"
+                    "• **One-Time Registration (OTR):** Generating an OTR profile on `ssc.gov.in` is mandatory before applying for any notification (JE, CGL, CHSL, MTS).\n"
+                    "• **SSC JE (Junior Engineer):**\n"
+                    "  - Posts: Group 'B' Junior Engineers in Civil, Electrical, and Mechanical branches (CPWD, MES, BRO, CWC).\n"
+                    "  - Paper-I (CBE): Computer Based Exam testing General Intelligence, Reasoning, General Awareness, and Technical Engineering.\n"
+                    "  - Paper-II (CBE): Advanced technical domain examination.\n"
+                    "• **Required Documents & Biometrics:**\n"
+                    "  1. Live Webcam Capture Photo (must be captured live with clean white/plain background and adequate face lighting).\n"
+                    "  2. Scanned Signature (10 KB – 20 KB in JPG/JPEG format, ~ 4.0 cm × 2.0 cm).\n"
+                    "  3. Matriculation/10th Certificate (for DOB verification).\n"
+                    "  4. Engineering Degree or 3-Year Diploma in Civil/Electrical/Mechanical.\n"
+                    "• **FormPilot Blueprint:** FormPilot pre-verifies profile credentials and ensures biometrics strictly adhere to SSC guidelines."
+                ),
+                "action_taken": "FAQ_ANSWER",
+                "timestamp": now,
+            }
+
+        if not re.search(r"\bssc\b", text_lower) and re.search(r"\b(je+|jee\s*main|iit\s*jee|nta\s*jee|jee\s*advanced|when\s+is\s+je+)\b", text_lower):
             return {
                 "reply": (
                     "**JEE (Main) 2026/2027 Schedule & Examination Dates:**\n\n"
@@ -2288,6 +2311,32 @@ class FormPilotChatAssistant:
                     "  3. Category certificate (SC/ST/OBC-NCL/EWS) if applicable (PDF, 50 KB – 300 KB).\n"
                     "  4. PwD / UDID certificate if applicable (PDF, 50 KB – 300 KB).\n"
                     "• **FormPilot Blueprint:** Certified under `NTA_JEE_MAIN_2027`. FormPilot pre-verifies all 104 replica fields and automatically resizes biometrics before upload."
+                ),
+                "action_taken": "FAQ_ANSWER",
+                "timestamp": now,
+            }
+
+        if re.search(r"\b(upsc|civil\s*services|ias|ips|nda|cds)\b", text_lower):
+            return {
+                "reply": (
+                    "**UPSC (Union Public Service Commission) Guidelines:**\n\n"
+                    "• **Official Portal:** Apply strictly through `https://upsconline.nic.in/`.\n"
+                    "• **One Time Registration (OTR):** Mandatory before applying for CSE, NDA, CDS, or EPFO.\n"
+                    "• **Document Specs:** Recent photo (with name and date imprinted if required by notice) and clear signature in 20–300 KB range.\n"
+                    "• **FormPilot Blueprint:** FormPilot validates OTR data and prevents common photo-signature rejection errors."
+                ),
+                "action_taken": "FAQ_ANSWER",
+                "timestamp": now,
+            }
+
+        if re.search(r"\b(neet|ug\s*neet|nta\s*neet|medical\s*entrance)\b", text_lower):
+            return {
+                "reply": (
+                    "**NEET (UG) / NTA Information:**\n\n"
+                    "• **Official Portal:** `https://neet.nta.nic.in/` (NTA).\n"
+                    "• **Exam Window:** Typically held on the first Sunday of May.\n"
+                    "• **Required Documents:** Passport photo (white background), postcard size photo (4×6), signature, left and right-hand fingers/thumb impressions.\n"
+                    "• **FormPilot Blueprint:** FormPilot automatically formats and checks postcard photo and signature requirements."
                 ),
                 "action_taken": "FAQ_ANSWER",
                 "timestamp": now,

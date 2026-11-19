@@ -62,9 +62,6 @@ export default function Sidebar({
                 <h2 className="text-xs font-black tracking-wider uppercase truncate">
                   <span className="text-emerald-400">Form</span><span className="text-teal-300">Pilot</span>
                 </h2>
-                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold uppercase">
-                  v2.4
-                </span>
               </div>
               <p className="text-[10px] text-slate-400 font-mono truncate">Autonomous GovTech Agent</p>
             </div>
@@ -357,7 +354,20 @@ export default function Sidebar({
         </button>
 
 
-
+        {/* Settings button */}
+        {/* <button
+          type="button"
+          onClick={() => onSelectNav('settings')}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+            activeItem === 'settings'
+              ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-500/40'
+              : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+          } ${collapsed ? 'justify-center' : ''}`}
+          title="Engine & Distributed Architecture Settings"
+        >
+          <Settings className={`w-4 h-4 ${activeItem === 'settings' ? 'text-indigo-400' : 'text-slate-400'}`} />
+          {!collapsed && <span>Engine Settings</span>}
+        </button> */}
 
         {!account && accountsEnabled && onOpenAuth && (
           <button
