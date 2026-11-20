@@ -260,45 +260,49 @@ If a cloud browser session cannot start, the run continues locally. `GET /api/ag
 ### Requirements
 
 - Python 3.11 or newer
-- Node.js 20 or newer
-- A Chromium browser for Playwright
+- Playwright Chromium (`python -m playwright install chromium`)
+- *(Optional)* Node.js 20+ (only required if modifying the React frontend source; production assets are pre-built)
 
-### Recommended setup
+### Zero-Friction Quickstart (Ready to Run)
 
+FormPilot ships with pre-compiled production UI assets in `frontend/dist/` — **no Node.js or frontend build steps are required** to run the complete cockpit!
+
+#### 1. Clone & Set Up Python Virtual Environment
 ```bash
-git clone https://github.com/Nishant-learns/formpilot.git
-cd formpilot
+git clone https://github.com/Nishant-learns/formpilot-ai.git
+cd formpilot-ai
 
-./scripts/bootstrap.sh
-```
-
-The bootstrap script creates `.venv`, installs backend and frontend dependencies, downloads Chromium, copies `.env.example` to `.env` if needed, and builds the frontend.
-
-Start the app:
-
-```bash
-./run.sh
-```
-
-Open **http://127.0.0.1:8000**. The practice portal is at **http://127.0.0.1:8000/gov-portal-demo**.
-
-### Manual setup
-
-```bash
 python3 -m venv .venv
-. .venv/bin/activate
+source .venv/bin/activate
 pip install -r requirements-dev.txt
 python -m playwright install chromium
-
-cp .env.example .env
-# Optional: add TINYFISH_API_KEY to .env for live search and cloud browser sessions.
-
-npm ci --prefix frontend
-npm run build --prefix frontend
-./run.sh
 ```
 
-`run.sh` loads `.env` when present, prefers `.venv`, and binds to `127.0.0.1:8000` by default. Use `FORMPILOT_HOST` and `FORMPILOT_PORT` to change that.
+#### 2. Start FormPilot
+```bash
+./run.sh
+# Or run directly via uvicorn:
+# python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+Open **http://127.0.0.1:8000** in your browser.
+- **Candidate Cockpit UI**: `http://127.0.0.1:8000/`
+- **Practice Portal Demo**: `http://127.0.0.1:8000/gov-portal-demo`
+- **Interactive OpenAPI Docs**: `http://127.0.0.1:8000/docs`
+
+#### 3. Run Automated Test Suite (607+ Tests)
+```bash
+pytest
+```
+
+#### 4. Frontend Development (Optional)
+If you wish to modify the React cockpit source:
+```bash
+cd frontend
+npm install
+npm run dev   # Runs Vite live HMR dev server on http://localhost:5173
+npm run build # Re-builds production bundle into frontend/dist/
+```
 
 ---
 
