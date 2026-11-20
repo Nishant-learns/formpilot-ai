@@ -1036,7 +1036,7 @@ export default function App() {
             ) : sidebarNav === 'map' ? (
               <DomTelemetryPage formMap={formMap} recipe={recipe} runMode={runMode} onRescan={handleRescan} rescanning={rescanning} />
             ) : (
-              <main className="relative mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-3 pb-8 pt-3 sm:px-5">
+              <main role="main" aria-label="FormPilot Main Workspace" className="relative mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-3 pb-8 pt-3 sm:px-5">
                 {sessionVisible && (
                   <SessionStrip
                     runState={runState}
@@ -1160,6 +1160,8 @@ export default function App() {
           {/* Persistent RHS Copilot & Inspector Rail (Docked Mode) */}
           {copilotMode === 'docked' && (
             <aside
+              role="complementary"
+              aria-label="Autonomous AI Copilot and DOM Inspector"
               className={`hidden lg:flex shrink-0 border-l border-white/[0.08] bg-slate-950/50 backdrop-blur-xl flex-col h-full z-20 transition-all duration-300 ${
                 copilotMinimized ? 'w-14' : 'w-[390px] xl:w-[430px]'
               }`}

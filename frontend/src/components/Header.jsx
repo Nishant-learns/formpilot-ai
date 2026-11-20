@@ -164,6 +164,7 @@ export default function Header({
             <button
               type="button"
               onClick={onPauseToggle}
+              aria-label={paused ? 'Resume the automated agent' : 'Pause the automated agent'}
               className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition-all ${
                 paused
                   ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 glow-emerald'
@@ -179,6 +180,7 @@ export default function Header({
           <button
             type="button"
             onClick={() => navigate('vault')}
+            aria-label="Open OneVault candidate profile and saved details"
             className="flex items-center gap-2 rounded-xl border border-white/[0.09] bg-white/[0.04] hover:bg-white/[0.08] hover:border-emerald-500/30 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition-all shadow-sm"
             title={readiness ? `Profile ${readiness.percent}% ready — ${readiness.filled} of ${readiness.total} core details saved` : 'Open your saved details'}
           >
@@ -190,6 +192,7 @@ export default function Header({
           <button
             type="button"
             onClick={() => setVoiceEnabled(!voiceEnabled)}
+            aria-label={voiceEnabled ? 'Disable spoken voice guidance' : 'Enable spoken voice guidance'}
             className={`hidden items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-medium transition-all sm:flex shadow-sm ${
               voiceEnabled
                 ? 'border-indigo-500/40 bg-indigo-500/15 text-indigo-200 shadow-indigo-500/10'
@@ -204,6 +207,7 @@ export default function Header({
           <button
             type="button"
             onClick={() => navigate('biometrics')}
+            aria-label="Open photo and signature preparation studio"
             className="hidden items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-slate-100 transition-all shadow-sm sm:flex"
             title="Photo and signature studio"
           >
@@ -221,12 +225,11 @@ export default function Header({
             <BookOpen className="h-4 w-4" />
           </button>
 
-
-
           {!account && accountsEnabled && onOpenAuth && (
             <button
               type="button"
               onClick={onOpenAuth}
+              aria-label="Sign in to your account"
               className="flex items-center gap-1.5 rounded-xl border border-emerald-400/30 bg-white/[0.04] hover:bg-emerald-500/15 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 transition-all shadow-sm"
               title="Sign in with Google (optional) or continue as guest"
             >

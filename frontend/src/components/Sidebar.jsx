@@ -70,6 +70,7 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onToggleCollapse}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
@@ -106,7 +107,7 @@ export default function Sidebar({
       )}
 
       {/* Primary Navigation */}
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+      <nav role="navigation" aria-label="Main cockpit navigation" className="flex-1 p-2 space-y-1 overflow-y-auto">
         {!collapsed && (
           <div className="px-2 pt-2 pb-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest font-mono">
             Cockpit Workstation
@@ -117,6 +118,8 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => onSelectNav('portal')}
+          aria-label="Navigate to Live Portal Viewport"
+          aria-current={activeItem === 'portal' ? 'page' : undefined}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
             activeItem === 'portal'
               ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-500/40 shadow-sm shadow-indigo-500/20'
@@ -143,6 +146,8 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => onSelectNav('vault')}
+          aria-label="Navigate to OneVault Identity"
+          aria-current={activeItem === 'vault' ? 'page' : undefined}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
             activeItem === 'vault'
               ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-500/40 shadow-sm shadow-indigo-500/20'
@@ -167,6 +172,8 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => onSelectNav('biometrics')}
+          aria-label="Navigate to Biometrics Studio"
+          aria-current={activeItem === 'biometrics' ? 'page' : undefined}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
             activeItem === 'biometrics'
               ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-500/40 shadow-sm shadow-indigo-500/20'
@@ -191,6 +198,8 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => onSelectNav('runs')}
+          aria-label="Navigate to Merkle Audit Ledger"
+          aria-current={activeItem === 'runs' ? 'page' : undefined}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
             activeItem === 'runs'
               ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-500/40 shadow-sm shadow-indigo-500/20'
@@ -215,6 +224,8 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => onSelectNav('stream')}
+          aria-label="Navigate to Cognitive Thought Stream"
+          aria-current={activeItem === 'stream' ? 'page' : undefined}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
             activeItem === 'stream'
               ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-500/40'
@@ -237,6 +248,8 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => onSelectNav('map')}
+          aria-label="Navigate to DOM Map & Locators"
+          aria-current={activeItem === 'map' ? 'page' : undefined}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
             activeItem === 'map'
               ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-500/40'

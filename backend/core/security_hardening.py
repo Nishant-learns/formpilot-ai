@@ -315,3 +315,51 @@ class PIISanitizer:
         if isinstance(data, str):
             return cls.mask_text(data)
         return data
+
+
+class SensitiveOperationGuard:
+    """Enterprise protection guard for high-stakes sensitive form operations.
+
+    Enforces:
+    1. Constant-time token verification to defeat timing side-channel attacks.
+    2. Strict physical roadblocks for legally binding & monetary actions (Payment / Final Submit).
+    3. Ephemeral memory sanitization to prevent sensitive buffers from persisting in heap.
+    """
+
+    SENSITIVE_ACTIONS: Set[str] = {
+        "PAYMENT_EXECUTION",
+        "FINAL_APPLICATION_SUBMIT",
+        "LEGAL_DECLARATION_CONFIRMATION",
+        "CREDENTIAL_UPDATE",
+        "BIOMETRIC_EXFILTRATION",
+    }
+
+    @staticmethod
+    def constant_time_compare(val_a: Optional[str], val_b: Optional[str]) -> bool:
+        """Constant-time equality check to prevent timing side-channel attacks."""
+        if val_a is None or val_b is None:
+            return False
+        import hmac
+        return hmac.compare_digest(str(val_a).encode("utf-8"), str(val_b).encode("utf-8"))
+
+    @classmethod
+    def is_protected_operation(cls, operation_name: str) -> bool:
+        """True if the given action requires an explicit human-in-the-loop authorization gate."""
+        return operation_name.upper().strip() in cls.SENSITIVE_ACTIONS
+
+    @classmethod
+    def assert_human_authorization_required(cls, operation_name: str, has_human_gate: bool) -> None:
+        """Enforces that sensitive operations are never executed autonomously without a human gate."""
+        if cls.is_protected_operation(operation_name) and not has_human_gate:
+            raise PermissionError(
+                f"SENSITIVE OPERATION BLOCKED: '{operation_name}' cannot be executed autonomously. "
+                "FormPilot policy requires explicit human authorization for all final commitments."
+            )
+
+    @staticmethod
+    def secure_zero_buffer(target: bytearray) -> None:
+        """Securely zero-out in-memory byte buffers containing keys or credentials."""
+        if isinstance(target, bytearray):
+            for i in range(len(target)):
+                target[i] = 0
+
