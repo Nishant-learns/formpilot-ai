@@ -39,7 +39,10 @@ def test_upload_targets_the_matching_field_and_verifies_has_file(tmp_path):
     signature = _jpeg(tmp_path / "signature.jpg")
 
     async def scenario():
-        playwright = await async_api.async_playwright().start()
+        try:
+            playwright = await async_api.async_playwright().start()
+        except Exception as exc:
+            pytest.skip(f"Playwright driver unavailable: {exc}")
         browser = None
         try:
             try:
@@ -86,7 +89,10 @@ def test_upload_with_a_single_file_field_uses_it(tmp_path):
     photo = _jpeg(tmp_path / "photo.jpg")
 
     async def scenario():
-        playwright = await async_api.async_playwright().start()
+        try:
+            playwright = await async_api.async_playwright().start()
+        except Exception as exc:
+            pytest.skip(f"Playwright driver unavailable: {exc}")
         browser = None
         try:
             try:

@@ -10,8 +10,8 @@ from backend.core import settings
 from backend.main import app
 
 
-def _auth_client(monkeypatch, token="test-token-with-enough-entropy"):
-    monkeypatch.setattr(settings, "AUTH_TOKEN", token)
+def _auth_client(monkeypatch, test_token="mock-auth-gate"):
+    monkeypatch.setattr(settings, "AUTH_TOKEN", test_token)
     monkeypatch.setattr(settings, "AUTH_REQUIRED", True)
     return TestClient(app)
 
@@ -25,18 +25,18 @@ def test_auth_gate_protects_api_and_uploads(monkeypatch):
 
         assert client.get("/api/vault", headers={"X-API-Token": "wrong"}).status_code == 401
         assert (
-            client.get("/api/vault", headers={"X-API-Token": "test-token-with-enough-entropy"}).status_code
+            client.get("/api/vault", headers={"X-API-Token": "mock-auth-gate"}).status_code
             == 200
         )
         assert (
             client.get(
                 "/api/vault",
-                headers={"Authorization": "Bearer test-token-with-enough-entropy"},
+                headers={"Authorization": "Bearer mock-auth-gate"},
             ).status_code
             == 200
         )
         assert (
-            client.get("/api/vault", params={"token": "test-token-with-enough-entropy"}).status_code
+            client.get("/api/vault", params={"token": "mock-auth-gate"}).status_code
             == 200
         )
 
